@@ -2,6 +2,21 @@
   region = "us-east-1"
 }
 
+# Para aplicar el aws-auth ConfigMap
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = [
+      "eks", "get-token",
+      "--cluster-name", module.eks.cluster_name,
+      "--region",      var.region
+    ]
+  }
+}
+
 # VPC y redes
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -111,12 +126,10 @@ module "eks_aws_auth" {
   source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
   version = "20.36.0"
 
-  # Conecta con tu clúster recién creado
-  cluster_name                   = module.eks.cluster_id
-  cluster_endpoint               = module.eks.cluster_endpoint
-  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+  create_aws_auth_configmap = false
+  manage_aws_auth_configmap = true
 
-  # Mapea el rol IAM del Managed Node Group "worker"
+    # Mapea el rol IAM del Managed Node Group "worker"
   aws_auth_roles = [
     {
       rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
@@ -126,6 +139,7 @@ module "eks_aws_auth" {
   ]
 
   aws_auth_users = []  # (si necesitas mapear usuarios, los añades aquí)
+  aws_auth_accounts = []
 }
 
 
