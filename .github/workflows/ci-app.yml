@@ -1,8 +1,9 @@
 name: CI App
 on:
-  push:
-    paths:
-      - 'app/**'
+  # Comentado para ejecución manual únicamente
+  #push:
+  #  paths:
+  #    - 'app/**'
   workflow_dispatch:
 
 jobs:
@@ -36,5 +37,6 @@ jobs:
       
       - name: Update EKS deployment
         run: |
-          aws eks update-kubeconfig --name wiz-cluster --region us-east-1
+          # Actualizado para usar el nuevo nombre del clúster
+          aws eks update-kubeconfig --name wiz-cluster-new --region us-east-1
           kubectl set image deployment/wiz-app wiz-app=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
