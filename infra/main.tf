@@ -341,3 +341,136 @@ resource "aws_security_group" "eks_nodes" {
     Name = "eks-nodes-sg"
   }
 }
+
+# Kubernetes resources for application deployment
+resource "kubernetes_deployment" "app" {
+  metadata {
+    name = "wiz-app"
+    labels = {
+      app = "wiz-app"
+    }
+  }
+
+  spec {
+    replicas = 2
+
+    selector {
+      match_labels = {
+        app = "wiz-app"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "wiz-app"
+        }
+      }
+
+      spec {
+        # Run container as root (cluster admin privileges)
+        security_context {
+          run_as_user  = 0
+          run_as_group = 0
+          fs_group     = 0
+        }
+
+        container {
+          name  = "wiz-app"
+          image = "${aws_ecr_repository.wiz_app.repository_url}:latest"
+          
+          env {
+            name  = "MONGODB_URI"
+            value = "mongodb://${aws_instance.mongo.private_ip}:27017/wizdb"
+          }
+
+          resources {
+            limits = {
+              cpu    = "0.5"
+              memory = "512Mi"
+            }
+            requests = {
+              cpu    = "250m"
+              memory = "50Mi"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "app" {
+  metadata {
+    name = "wiz-app"
+  }
+
+  spec {
+    selector = {
+      app = "wiz-app"
+    }
+
+    port {
+      port        = 80
+      target_port = 8080
+    }
+
+    type = "LoadBalancer"
+  }
+}
+
+# CloudTrail for audit logging
+resource "aws_cloudtrail" "main" {
+  name                          = "wiz-exercise-trail"
+  s3_bucket_name                = aws_s3_bucket.cloudtrail.id
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_logging                = true
+  
+  event_selector {
+    read_write_type           = "All"
+    include_management_events = true
+  }
+}
+
+# Security controls - AWS GuardDuty for threat detection
+resource "aws_guardduty_detector" "main" {
+  enable = true
+}
+
+# Security controls - AWS Config for compliance monitoring
+resource "aws_config_configuration_recorder" "main" {
+  name     = "wiz-exercise-config"
+  role_arn = aws_iam_role.config_role.arn
+  
+  recording_group {
+    all_supported = true
+  }
+}
+
+resource "aws_iam_role" "config_role" {
+  name = "config-role"
+  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "config.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "config_policy" {
+  role       = aws_iam_role.config_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSConfigRole"
+}
+
+resource "aws_config_configuration_recorder_status" "main" {
+  name       = aws_config_configuration_recorder.main.name
+  is_enabled = true
+}
