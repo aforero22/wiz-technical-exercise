@@ -482,7 +482,12 @@ resource "aws_cloudtrail" "main" {
   depends_on = [aws_s3_bucket_policy.cloudtrail_policy]
 }
 
-# AWS Config
+# Security controls - AWS GuardDuty for threat detection
+resource "aws_guardduty_detector" "main" {
+  enable = true
+}
+
+# Security controls - AWS Config for compliance monitoring
 resource "aws_config_configuration_recorder" "main" {
   name     = "wiz-exercise-config"
   role_arn = aws_iam_role.config_role.arn
@@ -504,21 +509,6 @@ resource "aws_config_configuration_recorder_status" "main" {
   name       = aws_config_configuration_recorder.main.name
   is_enabled = true
   depends_on = [aws_config_delivery_channel.main]
-}
-
-# Security controls - AWS GuardDuty for threat detection
-resource "aws_guardduty_detector" "main" {
-  enable = true
-}
-
-# Security controls - AWS Config for compliance monitoring
-resource "aws_config_configuration_recorder" "main" {
-  name     = "wiz-exercise-config"
-  role_arn = aws_iam_role.config_role.arn
-  
-  recording_group {
-    all_supported = true
-  }
 }
 
 resource "aws_iam_role" "config_role" {
