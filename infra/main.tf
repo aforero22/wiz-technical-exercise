@@ -531,17 +531,17 @@ mainSteps:
         - 'set -euo pipefail'
         - ''
         - '# Variables de entorno'
-        - 'TIMESTAMP=$(date +"%Y%m%d_%H%M%S")'
-        - 'FILENAME="dump_${TIMESTAMP}.archive"'
+        - 'TIMESTAMP=$$(date +"%Y%m%d_%H%M%S")'
+        - 'FILENAME="dump_$${TIMESTAMP}.archive"'
         - 'MONGO_CONN_URI="mongodb://localhost:27017/wizdb"'
         - 'AWS_BUCKET_NAME="${aws_s3_bucket.backups.bucket}"'
         - ''
         - 'echo "-> Iniciando backup de MongoDB"'
-        - 'mongodump --uri "$MONGO_CONN_URI" --archive="$FILENAME"'
-        - 'echo "-> Subiendo $FILENAME a s3://$AWS_BUCKET_NAME/"'
-        - 'aws s3 cp "$FILENAME" "s3://$AWS_BUCKET_NAME/"'
+        - 'mongodump --uri "$$MONGO_CONN_URI" --archive="$$FILENAME"'
+        - 'echo "-> Subiendo $$FILENAME a s3://$$AWS_BUCKET_NAME/"'
+        - 'aws s3 cp "$$FILENAME" "s3://$$AWS_BUCKET_NAME/"'
         - 'echo "-> Backup completado"'
-        - 'rm "$FILENAME"'
+        - 'rm "$$FILENAME"'
 DOC
 }
 
