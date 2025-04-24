@@ -2,13 +2,8 @@
 # Este archivo define los recursos de seguridad como GuardDuty y CloudTrail
 
 # Security controls - AWS GuardDuty for threat detection
-data "aws_guardduty_detector" "existing" {
-  id = "default"
-}
-
 resource "aws_guardduty_detector" "gd" {
-  count   = data.aws_guardduty_detector.existing.id == "" ? 1 : 0
-  enable  = true
+  enable = true
   finding_publishing_frequency = "FIFTEEN_MINUTES"
 }
 
