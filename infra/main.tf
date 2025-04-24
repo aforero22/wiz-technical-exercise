@@ -81,7 +81,7 @@ resource "aws_instance" "mongo" {
 # EKS Cluster (o k8s managed)
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version         = "18.0.0"
+  version         = ">= 18.20.0"
 
   cluster_name    = "wiz-cluster"
   cluster_version = "1.27"
@@ -104,7 +104,7 @@ module "eks" {
  }
 
   #
-  create_aws_auth_configmap = true
+  manage_aws_auth_configmap = true
 }
 
 
