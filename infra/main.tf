@@ -110,6 +110,10 @@ module "eks" {
 # Bucket S3 público
 resource "aws_s3_bucket" "backups" {
   bucket = "wiz-exercise-backups-${random_id.bucket_id.hex}"
+}
+
+resource "aws_s3_bucket_acl" "backups_acl" {
+  bucket = aws_s3_bucket.backups.id
   acl    = "public-read"
 }
 
