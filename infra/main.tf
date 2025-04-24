@@ -254,6 +254,11 @@ module "eks_aws_auth" {
       rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
       username = "system:node:{{EC2PrivateDNSName}}"
       groups   = ["system:bootstrappers", "system:nodes"]
+    },
+    {
+      rolearn  = module.eks.cluster_iam_role_arn
+      username = "system:node:{{EC2PrivateDNSName}}"
+      groups   = ["system:masters"]
     }
   ]
 
