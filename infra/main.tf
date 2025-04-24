@@ -47,14 +47,14 @@ module "vpc" {
 
 # Security Group para MongoDB (SSH abierto)
 resource "aws_security_group" "mongo_sg" {
-  name        = "mongo-sg"
+  name_prefix = "mongo-sg-"
   vpc_id      = module.vpc.vpc_id
   description = "Security group for MongoDB instance"
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # TODO: Restrict to specific IP ranges
+    cidr_blocks = ["0.0.0.0/0"]  # VULNERABILIDAD: SSH abierto al mundo
   }
   ingress {
     from_port       = 27017
@@ -261,17 +261,17 @@ module "eks_aws_auth" {
   aws_auth_accounts = []
 }
 
-# Bucket S3 público
+# Bucket S3 para backups (modificado para evitar acceso público)
 resource "aws_s3_bucket" "backups" {
   bucket = "wiz-exercise-backups-${random_id.bucket_id.hex}"
 }
 
 resource "aws_s3_bucket_public_access_block" "backups_block" {
   bucket                  = aws_s3_bucket.backups.id
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+  block_public_acls       = false  # VULNERABILIDAD: Bucket público
+  block_public_policy     = false  # VULNERABILIDAD: Políticas públicas permitidas
+  ignore_public_acls      = false  # VULNERABILIDAD: ACLs públicas permitidas
+  restrict_public_buckets = false  # VULNERABILIDAD: Buckets públicos permitidos
 }
 
 resource "aws_s3_bucket_policy" "backups_policy" {
@@ -282,17 +282,17 @@ resource "aws_s3_bucket_policy" "backups_policy" {
       {
         Sid       = "PublicReadGetObject"
         Effect    = "Allow"
-        Principal = "*"
+        Principal = "*"  # VULNERABILIDAD: Acceso público al bucket
         Action    = ["s3:GetObject"]
         Resource  = ["${aws_s3_bucket.backups.arn}/*"]
       },
       {
         Sid       = "PublicListBucket"
         Effect    = "Allow"
-        Principal = "*"
+        Principal = "*"  # VULNERABILIDAD: Listado público del bucket
         Action    = ["s3:ListBucket"]
         Resource  = [aws_s3_bucket.backups.arn]
-      },
+      }
     ]
   })
 }
@@ -354,7 +354,7 @@ resource "aws_s3_bucket_policy" "cloudtrail_policy" {
 
 # Security group for EKS nodes
 resource "aws_security_group" "eks_nodes" {
-  name        = "eks-nodes-sg"
+  name_prefix = "eks-nodes-sg-"
   description = "Security group for EKS nodes"
   vpc_id      = module.vpc.vpc_id
 
@@ -454,7 +454,7 @@ resource "kubernetes_service" "app" {
   }
 }
 
-# CloudTrail for audit logging
+# CloudTrail para auditoría (modificado para usar la política correcta)
 resource "aws_cloudtrail" "main" {
   name                          = "wiz-exercise-trail"
   s3_bucket_name                = aws_s3_bucket.cloudtrail.id
@@ -466,6 +466,8 @@ resource "aws_cloudtrail" "main" {
     read_write_type           = "All"
     include_management_events = true
   }
+
+  depends_on = [aws_s3_bucket_policy.cloudtrail_policy]
 }
 
 # Security controls - AWS GuardDuty for threat detection
@@ -502,7 +504,7 @@ resource "aws_iam_role" "config_role" {
 
 resource "aws_iam_role_policy_attachment" "config_policy" {
   role       = aws_iam_role.config_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSConfigRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
 }
 
 resource "aws_config_configuration_recorder_status" "main" {
