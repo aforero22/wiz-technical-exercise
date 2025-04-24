@@ -26,6 +26,7 @@ variable "mongo_ami" {
   description = "AMI antigua para MongoDB"
   type        = string
   default     = "ami-0c55b159cbfafe1f0" # Ubuntu 16.04 LTS en us-east-1
+}
 
 variable "mongo_instance_type" {
   description = "Tipo de instancia para MongoDB"
