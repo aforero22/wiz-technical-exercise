@@ -1,1 +1,1 @@
- Este archivo confirma que la imagen fue construida para el ejercicio Wiz.
+This is the Wiz Exercise application for demonstrating cloud security concepts.

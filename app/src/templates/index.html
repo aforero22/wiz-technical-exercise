@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiz Exercise App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .task-form {
+            margin-bottom: 20px;
+        }
+        .task-input {
+            padding: 8px;
+            width: 70%;
+        }
+        .task-button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .task-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .task-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+        }
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wiz Exercise Task Manager</h1>
+    
+    <div class="task-form">
+        <form action="/add" method="post">
+            <input type="text" name="task" class="task-input" placeholder="Enter a new task" required>
+            <button type="submit" class="task-button">Add Task</button>
+        </form>
+    </div>
+    
+    <ul class="task-list">
+        {% for task in tasks %}
+        <li class="task-item">
+            <span>{{ task.name }}</span>
+            <a href="/delete/{{ task._id }}" class="delete-button">Delete</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html> 
