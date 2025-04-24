@@ -28,18 +28,33 @@ module "vpc" {
 
   public_subnets  = var.public_subnets
   private_subnets = var.private_subnets
+
+  # Enable NAT Gateway for private subnets
+  enable_nat_gateway     = true
+  single_nat_gateway     = true
+  one_nat_gateway_per_az = false
+
+  # Enable DNS hostnames and support
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  # Add tags
+  tags = {
+    Environment = "production"
+    Terraform   = "true"
+  }
 }
 
 # Security Group para MongoDB (SSH abierto)
 resource "aws_security_group" "mongo_sg" {
   name        = "mongo-sg"
   vpc_id      = module.vpc.vpc_id
-  description = "SSH abierto y trafico MongoDB desde EKS"
+  description = "Security group for MongoDB instance"
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  # TODO: Restrict to specific IP ranges
   }
   ingress {
     from_port       = 27017
@@ -53,15 +68,21 @@ resource "aws_security_group" "mongo_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  tags = {
+    Name = "mongo-sg"
+  }
 }
 
-# IAM Role para VM MongoDB con permisos excesivos
+# IAM Role para VM MongoDB con permisos mínimos necesarios
 resource "aws_iam_role" "mongo_role" {
   name = "mongo-role"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  tags = {
+    Name = "mongo-role"
+  }
 }
 
-# IAM Role y Profile (Admin) para MongoDB
+# IAM Role y Profile para MongoDB
 data "aws_iam_policy_document" "ec2_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -72,9 +93,27 @@ data "aws_iam_policy_document" "ec2_assume" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "mongo_attach" {
-  role       = aws_iam_role.mongo_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+# Política IAM más restrictiva para MongoDB
+resource "aws_iam_role_policy" "mongo_policy" {
+  name = "mongo-policy"
+  role = aws_iam_role.mongo_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.backups.arn,
+          "${aws_s3_bucket.backups.arn}/*"
+        ]
+      }
+    ]
+  })
 }
 
 resource "aws_iam_instance_profile" "mongo_profile" {
@@ -104,22 +143,67 @@ module "eks" {
   vpc_id      = module.vpc.vpc_id
   subnet_ids  = module.vpc.private_subnets
 
+  # Enable IRSA
+  enable_irsa = true
+
+  # Add necessary addons
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent = true
+    }
+  }
+
   eks_managed_node_group_defaults = {
-    ami_type  = "AL2_x86_64"
-    disk_size = 20
+    ami_type       = "AL2_x86_64"
+    disk_size      = 20
+    instance_types = ["t3.medium"]
+
+    # Enable detailed monitoring
+    enable_monitoring = true
+
+    # Add necessary IAM policies
+    iam_role_additional_policies = {
+      AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    }
+
+    # Add security groups
+    vpc_security_group_ids = [aws_security_group.eks_nodes.id]
   }
 
   eks_managed_node_groups = {
-  worker = {
-    desired_size   = 2
-    min_size       = 1
-    max_size       = 3
-    instance_types = ["t3.medium"]
-  }
- }
+    worker = {
+      desired_size = 2
+      min_size     = 1
+      max_size     = 3
 
-  #
-  #manage_aws_auth_configmap = true
+      # Add labels and taints if needed
+      labels = {
+        Environment = "production"
+        NodeGroup  = "worker"
+      }
+
+      # Add tags
+      tags = {
+        Name = "worker-node"
+      }
+    }
+  }
+
+  # Add tags to the cluster
+  tags = {
+    Environment = "production"
+    Terraform   = "true"
+  }
 }
 
 module "eks_aws_auth" {
@@ -141,8 +225,6 @@ module "eks_aws_auth" {
   aws_auth_users = []  # (si necesitas mapear usuarios, los añades aquí)
   aws_auth_accounts = []
 }
-
-
 
 # Bucket S3 público
 resource "aws_s3_bucket" "backups" {
@@ -233,4 +315,29 @@ resource "aws_s3_bucket_policy" "cloudtrail_policy" {
       }
     ]
   })
+}
+
+# Security group for EKS nodes
+resource "aws_security_group" "eks_nodes" {
+  name        = "eks-nodes-sg"
+  description = "Security group for EKS nodes"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [module.eks.cluster_security_group_id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "eks-nodes-sg"
+  }
 }
