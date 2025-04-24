@@ -153,7 +153,7 @@ resource "aws_ecr_repository" "wiz_app" {
 
 resource "random_id" "bucket_id" { byte_length = 4 }
 
-resource "random_id" "ctail" {
+resource "random_id" "cloudtrail" {
   byte_length = 4
 }
 
