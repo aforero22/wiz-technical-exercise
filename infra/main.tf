@@ -137,7 +137,7 @@ module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   version         = "20.36.0"
 
-  cluster_name    = "wiz-cluster"
+  cluster_name    = "wiz-cluster-new"
   cluster_version = "1.27"
 
   vpc_id      = module.vpc.vpc_id
