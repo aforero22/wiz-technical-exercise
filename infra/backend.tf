@@ -3,6 +3,6 @@
   backend "s3" {
     bucket = "wiz-exercise-terraform-state"
     key    = "state/terraform.tfstate"
-    region = var.region
+    region = "us-east-1"
   }
 }
