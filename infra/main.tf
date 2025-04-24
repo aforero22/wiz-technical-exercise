@@ -111,6 +111,14 @@ resource "aws_s3_bucket" "backups" {
   bucket = "wiz-exercise-backups-${random_id.bucket_id.hex}"
 }
 
+resource "aws_s3_bucket_public_access_block" "backups_block" {
+  bucket                  = aws_s3_bucket.backups.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
 resource "aws_s3_bucket_policy" "backups_policy" {
   bucket = aws_s3_bucket.backups.id
   policy = jsonencode({
@@ -150,9 +158,18 @@ resource "random_id" "ctail" {
 }
 
 resource "aws_s3_bucket" "cloudtrail" {
-  bucket = "wiz-exercise-cloudtrail-logs-${random_id.ctail.hex}"
+  bucket = "wiz-exercise-cloudtrail-logs-${random_id.cloudtrail.hex}"
 }
 
+resource "aws_s3_bucket_public_access_block" "cloudtrail_block" {
+  bucket                  = aws_s3_bucket.cloudtrail.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket_policy" "cloudtrail_policy" {
   bucket = aws_s3_bucket.cloudtrail.id
@@ -160,26 +177,30 @@ resource "aws_s3_bucket_policy" "cloudtrail_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "AllowCloudTrailWrite"
+        Sid       = "AWSCloudTrailWrite"
         Effect    = "Allow"
         Principal = { Service = "cloudtrail.amazonaws.com" }
         Action    = "s3:PutObject"
         Resource  = ["${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
         Condition = {
-          StringEquals = {
-            "s3:x-amz-acl" = "bucket-owner-full-control"
-          }
+          StringEquals = { "s3:x-amz-acl" = "bucket-owner-full-control" }
         }
       },
       {
-        Sid       = "AllowCloudTrailAcl"
+        Sid       = "AWSCloudTrailGetBucketAcl"
         Effect    = "Allow"
         Principal = { Service = "cloudtrail.amazonaws.com" }
         Action    = "s3:GetBucketAcl"
         Resource  = [aws_s3_bucket.cloudtrail.arn]
-      },
+      }
     ]
   })
 }
 
-data "aws_caller_identity" "current" {}
+resource "aws_cloudtrail" "trail" {
+  name                          = "wiz-trail"
+  s3_bucket_name                = aws_s3_bucket.cloudtrail.id
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_log_file_validation    = true
+}
