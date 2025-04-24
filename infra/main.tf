@@ -482,6 +482,30 @@ resource "aws_cloudtrail" "main" {
   depends_on = [aws_s3_bucket_policy.cloudtrail_policy]
 }
 
+# AWS Config
+resource "aws_config_configuration_recorder" "main" {
+  name     = "wiz-exercise-config"
+  role_arn = aws_iam_role.config_role.arn
+  
+  recording_group {
+    all_supported = true
+  }
+}
+
+# Canal de entrega para AWS Config
+resource "aws_config_delivery_channel" "main" {
+  name           = "wiz-exercise-delivery-channel"
+  s3_bucket_name = aws_s3_bucket.cloudtrail.id
+  s3_key_prefix  = "config"
+  depends_on     = [aws_config_configuration_recorder.main]
+}
+
+resource "aws_config_configuration_recorder_status" "main" {
+  name       = aws_config_configuration_recorder.main.name
+  is_enabled = true
+  depends_on = [aws_config_delivery_channel.main]
+}
+
 # Security controls - AWS GuardDuty for threat detection
 resource "aws_guardduty_detector" "main" {
   enable = true
@@ -517,11 +541,6 @@ resource "aws_iam_role" "config_role" {
 resource "aws_iam_role_policy_attachment" "config_policy" {
   role       = aws_iam_role.config_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
-}
-
-resource "aws_config_configuration_recorder_status" "main" {
-  name       = aws_config_configuration_recorder.main.name
-  is_enabled = true
 }
 
 # Configuración para ejecutar backups automáticos
@@ -628,18 +647,4 @@ resource "aws_cloudwatch_event_target" "backup_target" {
 resource "aws_iam_role_policy_attachment" "ssm_policy" {
   role       = aws_iam_role.mongo_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-# Canal de entrega para AWS Config
-resource "aws_config_delivery_channel" "main" {
-  name           = "wiz-exercise-delivery-channel"
-  s3_bucket_name = aws_s3_bucket.cloudtrail.id
-  s3_key_prefix  = "config"
-  depends_on     = [aws_config_configuration_recorder.main]
-}
-
-resource "aws_config_configuration_recorder_status" "main" {
-  name       = aws_config_configuration_recorder.main.name
-  is_enabled = true
-  depends_on = [aws_config_delivery_channel.main]
 }
