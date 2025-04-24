@@ -19,7 +19,7 @@ module "vpc" {
 resource "aws_security_group" "mongo_sg" {
   name        = "mongo-sg"
   vpc_id      = module.vpc.vpc_id
-  description = "SSH abierto + tráfico MongoDB desde EKS"
+  description = "SSH abierto y trafico MongoDB desde EKS"
   ingress {
     from_port   = 22
     to_port     = 22
@@ -84,7 +84,7 @@ module "eks" {
   version         = "18.0.0"
 
   cluster_name    = "wiz-cluster"
-  cluster_version = "1.21"
+  cluster_version = "1.27"
 
   vpc_id      = module.vpc.vpc_id
   subnet_ids  = module.vpc.private_subnets
@@ -94,14 +94,13 @@ module "eks" {
     disk_size = 20
   }
 
-  eks_managed_node_groups = {
-    default = {
-      desired_size    = 2
-      min_size        = 1
-      max_size        = 3
-      instance_types  = ["t3.medium"]
-      capacity_type   = "ON_DEMAND"
-      update_config   = { max_unavailable_percentage = 50 }
+  self_managed_node_groups = {
+    worker_group = {
+      desired_size        = 2
+      min_size            = 1
+      max_size            = 3
+      instance_type       = "t3.medium"
+      asg_desired_capacity = 2
     }
   }
 }
@@ -112,9 +111,27 @@ resource "aws_s3_bucket" "backups" {
   bucket = "wiz-exercise-backups-${random_id.bucket_id.hex}"
 }
 
-resource "aws_s3_bucket_acl" "backups_acl" {
+resource "aws_s3_bucket_policy" "backups_policy" {
   bucket = aws_s3_bucket.backups.id
-  acl    = "public-read"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = ["s3:GetObject"]
+        Resource  = ["${aws_s3_bucket.backups.arn}/*"]
+      },
+      {
+        Sid       = "PublicListBucket"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = ["s3:ListBucket"]
+        Resource  = [aws_s3_bucket.backups.arn]
+      },
+    ]
+  })
 }
 
 # Repositorio ECR para la aplicación
@@ -127,3 +144,49 @@ resource "aws_ecr_repository" "wiz_app" {
 }
 
 resource "random_id" "bucket_id" { byte_length = 4 }
+
+resource "random_id" "ctail" {
+  byte_length = 4
+}
+
+resource "aws_s3_bucket" "cloudtrail" {
+  bucket = "wiz-exercise-cloudtrail-logs-${random_id.ctail.hex}"
+}
+
+resource "aws_cloudtrail" "trail" {
+  name                          = "wiz-trail"
+  s3_bucket_name                = aws_s3_bucket.cloudtrail.id
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_log_file_validation    = true
+}
+
+resource "aws_s3_bucket_policy" "cloudtrail_policy" {
+  bucket = aws_s3_bucket.cloudtrail.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowCloudTrailWrite"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = ["${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      },
+      {
+        Sid       = "AllowCloudTrailAcl"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:GetBucketAcl"
+        Resource  = [aws_s3_bucket.cloudtrail.arn]
+      },
+    ]
+  })
+}
+
+data "aws_caller_identity" "current" {}
