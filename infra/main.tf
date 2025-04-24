@@ -245,7 +245,7 @@ module "eks_aws_auth" {
   source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
   version = "20.36.0"
 
-  create_aws_auth_configmap = false
+  create_aws_auth_configmap = true
   manage_aws_auth_configmap = true
 
   # Mapea el rol IAM del Managed Node Group "worker"

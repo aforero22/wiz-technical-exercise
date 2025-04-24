@@ -1,18 +1,5 @@
 # Configuración de recursos de seguridad en AWS
-# Este archivo define los recursos de seguridad como GuardDuty y CloudTrail
-
-# Security controls - AWS GuardDuty for threat detection
-# VULNERABILIDAD: No se configura la frecuencia de publicación de hallazgos
-# VULNERABILIDAD: No se configura la retención de hallazgos
-resource "aws_guardduty_detector" "gd" {
-  enable = true
-  finding_publishing_frequency = "FIFTEEN_MINUTES"  # Frecuencia de publicación de hallazgos
-
-  # Importar el detector existente
-  lifecycle {
-    ignore_changes = [enable]  # Ignorar cambios en el estado enable
-  }
-}
+# Este archivo define los recursos de seguridad como CloudTrail
 
 # Configurar CloudTrail para registro de auditoría
 # CloudTrail registra todas las acciones realizadas en la cuenta de AWS
