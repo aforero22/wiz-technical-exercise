@@ -107,6 +107,28 @@ module "eks" {
   #manage_aws_auth_configmap = true
 }
 
+module "eks_aws_auth" {
+  source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
+  version = "20.36.0"
+
+  # Conecta con tu clúster recién creado
+  cluster_name                   = module.eks.cluster_id
+  cluster_endpoint               = module.eks.cluster_endpoint
+  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+
+  # Mapea el rol IAM del Managed Node Group "worker"
+  aws_auth_roles = [
+    {
+      rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
+      username = "system:node:{{EC2PrivateDNSName}}"
+      groups   = ["system:bootstrappers", "system:nodes"]
+    }
+  ]
+
+  aws_auth_users = []  # (si necesitas mapear usuarios, los añades aquí)
+}
+
+
 
 # Bucket S3 público
 resource "aws_s3_bucket" "backups" {
