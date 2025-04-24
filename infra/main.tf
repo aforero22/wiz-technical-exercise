@@ -248,7 +248,7 @@ module "eks_aws_auth" {
   create_aws_auth_configmap = false
   manage_aws_auth_configmap = true
 
-    # Mapea el rol IAM del Managed Node Group "worker"
+  # Mapea el rol IAM del Managed Node Group "worker"
   aws_auth_roles = [
     {
       rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
@@ -259,6 +259,11 @@ module "eks_aws_auth" {
 
   aws_auth_users = []  # (si necesitas mapear usuarios, los añades aquí)
   aws_auth_accounts = []
+
+  depends_on = [
+    module.eks,
+    kubernetes_deployment.app
+  ]
 }
 
 # Bucket S3 para backups (modificado para evitar acceso público)

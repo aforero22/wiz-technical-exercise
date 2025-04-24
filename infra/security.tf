@@ -7,6 +7,11 @@
 resource "aws_guardduty_detector" "gd" {
   enable = true
   finding_publishing_frequency = "FIFTEEN_MINUTES"  # Frecuencia de publicación de hallazgos
+
+  # Importar el detector existente
+  lifecycle {
+    ignore_changes = [enable]  # Ignorar cambios en el estado enable
+  }
 }
 
 # Configurar CloudTrail para registro de auditoría
