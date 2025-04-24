@@ -77,8 +77,4 @@ docker-compose.override.yml
 *.njsproj
 *.sln
 
-# --------------------
-# Otros
-# --------------------
-LICENSE
-README.md
+
