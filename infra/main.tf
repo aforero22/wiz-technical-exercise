@@ -241,29 +241,28 @@ module "eks" {
   }
 }
 
-module "eks_aws_auth" {
-  source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
-  version = "20.36.0"
+# Crear el ConfigMap aws-auth directamente
+resource "kubernetes_config_map" "aws_auth" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
 
-  create_aws_auth_configmap = true
-  manage_aws_auth_configmap = true
-
-  # Mapea el rol IAM del Managed Node Group "worker"
-  aws_auth_roles = [
-    {
-      rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
-      username = "system:node:{{EC2PrivateDNSName}}"
-      groups   = ["system:bootstrappers", "system:nodes"]
-    },
-    {
-      rolearn  = module.eks.cluster_iam_role_arn
-      username = "system:node:{{EC2PrivateDNSName}}"
-      groups   = ["system:masters"]
-    }
-  ]
-
-  aws_auth_users = []  # (si necesitas mapear usuarios, los añades aquí)
-  aws_auth_accounts = []
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = ["system:bootstrappers", "system:nodes"]
+      },
+      {
+        rolearn  = module.eks.cluster_iam_role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = ["system:masters"]
+      }
+    ])
+    mapUsers = yamlencode([])
+  }
 
   depends_on = [
     module.eks
@@ -408,7 +407,7 @@ resource "aws_security_group" "eks_nodes" {
 resource "kubernetes_deployment" "app" {
   depends_on = [
     module.eks,
-    module.eks_aws_auth,
+    kubernetes_config_map.aws_auth,
     aws_iam_role_policy_attachment.ssm_policy
   ]
 
@@ -476,7 +475,7 @@ resource "kubernetes_deployment" "app" {
 resource "kubernetes_service" "app" {
   depends_on = [
     module.eks,
-    module.eks_aws_auth,
+    kubernetes_config_map.aws_auth,
     kubernetes_deployment.app
   ]
 
