@@ -379,6 +379,12 @@ resource "aws_security_group" "eks_nodes" {
 
 # Kubernetes resources for application deployment
 resource "kubernetes_deployment" "app" {
+  depends_on = [
+    module.eks,
+    module.eks_aws_auth,
+    aws_iam_role_policy_attachment.ssm_policy
+  ]
+
   metadata {
     name = "wiz-app"
     labels = {
@@ -436,6 +442,12 @@ resource "kubernetes_deployment" "app" {
 }
 
 resource "kubernetes_service" "app" {
+  depends_on = [
+    module.eks,
+    module.eks_aws_auth,
+    kubernetes_deployment.app
+  ]
+
   metadata {
     name = "wiz-app"
   }
@@ -604,10 +616,30 @@ resource "aws_cloudwatch_event_target" "backup_target" {
     InstanceIds = [aws_instance.mongo.id]
     DocumentName = aws_ssm_document.backup_script.name
   })
+
+  # Añadir los parámetros específicos para Run Command
+  run_command_targets {
+    key    = "tag:Name"
+    values = ["mongo-old"]
+  }
 }
 
 # Política IAM para permitir que la instancia de MongoDB ejecute comandos SSM
 resource "aws_iam_role_policy_attachment" "ssm_policy" {
   role       = aws_iam_role.mongo_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# Canal de entrega para AWS Config
+resource "aws_config_delivery_channel" "main" {
+  name           = "wiz-exercise-delivery-channel"
+  s3_bucket_name = aws_s3_bucket.cloudtrail.id
+  s3_key_prefix  = "config"
+  depends_on     = [aws_config_configuration_recorder.main]
+}
+
+resource "aws_config_configuration_recorder_status" "main" {
+  name       = aws_config_configuration_recorder.main.name
+  is_enabled = true
+  depends_on = [aws_config_delivery_channel.main]
 }
