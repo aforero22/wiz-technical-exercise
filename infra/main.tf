@@ -128,7 +128,42 @@ resource "aws_instance" "mongo" {
   subnet_id              = module.vpc.public_subnets[0]
   vpc_security_group_ids = [aws_security_group.mongo_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.mongo_profile.name
-  user_data              = file("../scripts/mongo-userdata.sh")
+  user_data              = <<-EOF
+#!/bin/bash
+# Script de inicialización para la instancia EC2 de MongoDB
+# Este script se ejecuta durante el arranque de la instancia (userdata)
+
+# VULNERABILIDAD: Se utiliza Ubuntu 16.04 LTS (EOL) y MongoDB 4.0 (versión antigua)
+# VULNERABILIDAD: No se configura autenticación ni TLS
+# VULNERABILIDAD: No se configuran firewalls ni restricciones de red
+
+# Actualizar repositorios e instalar dependencias
+apt-get update
+apt-get install -y gnupg wget
+
+# Añadir clave GPG de MongoDB
+wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | apt-key add -
+
+# Configurar repositorio de MongoDB 4.0
+echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse" \
+    | tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+
+# Actualizar repositorios e instalar MongoDB
+apt-get update
+apt-get install -y mongodb-org
+
+# Habilitar e iniciar el servicio de MongoDB
+systemctl enable mongod
+systemctl start mongod
+
+# Instalar el agente SSM para permitir la ejecución remota de comandos
+snap install amazon-ssm-agent --classic
+systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+
+# (Opcional) Crear usuarios y habilitar autenticación
+# VULNERABILIDAD: No se implementa esta parte, dejando MongoDB sin autenticación
+EOF
   tags = { Name = "mongo-old" }
 }
 
@@ -473,4 +508,104 @@ resource "aws_iam_role_policy_attachment" "config_policy" {
 resource "aws_config_configuration_recorder_status" "main" {
   name       = aws_config_configuration_recorder.main.name
   is_enabled = true
+}
+
+# Configuración para ejecutar backups automáticos
+# Documento de Systems Manager para el script de backup
+resource "aws_ssm_document" "backup_script" {
+  name            = "wiz-mongo-backup"
+  document_type   = "Command"
+  document_format = "YAML"
+  content = <<DOC
+---
+schemaVersion: '2.2'
+description: 'Script para realizar backup de MongoDB y subirlo a S3'
+mainSteps:
+  - action: aws:runShellScript
+    name: backupMongoDB
+    inputs:
+      runCommand:
+        - '#!/bin/bash'
+        - 'set -euo pipefail'
+        - ''
+        - '# Variables de entorno'
+        - 'TIMESTAMP=$(date +"%Y%m%d_%H%M%S")'
+        - 'FILENAME="dump_${TIMESTAMP}.archive"'
+        - 'MONGO_CONN_URI="mongodb://localhost:27017/wizdb"'
+        - 'AWS_BUCKET_NAME="{{ aws_s3_bucket.backups.bucket }}"'
+        - ''
+        - 'echo "-> Iniciando backup de MongoDB"'
+        - 'mongodump --uri "$MONGO_CONN_URI" --archive="$FILENAME"'
+        - 'echo "-> Subiendo $FILENAME a s3://$AWS_BUCKET_NAME/"'
+        - 'aws s3 cp "$FILENAME" "s3://$AWS_BUCKET_NAME/"'
+        - 'echo "-> Backup completado"'
+        - 'rm "$FILENAME"'
+DOC
+}
+
+# Rol IAM para ejecutar el comando de backup
+resource "aws_iam_role" "backup_role" {
+  name = "mongo-backup-role"
+  
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Política IAM para el rol de backup
+resource "aws_iam_role_policy" "backup_policy" {
+  name = "mongo-backup-policy"
+  role = aws_iam_role.backup_role.id
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand",
+          "ssm:GetCommandInvocation"
+        ]
+        Resource = [
+          aws_ssm_document.backup_script.arn,
+          "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:instance/${aws_instance.mongo.id}"
+        ]
+      }
+    ]
+  })
+}
+
+# Regla de EventBridge para programar la ejecución diaria
+resource "aws_cloudwatch_event_rule" "backup_schedule" {
+  name                = "mongo-backup-daily"
+  description         = "Ejecuta backup de MongoDB diariamente a las 12 AM"
+  schedule_expression = "cron(0 0 * * ? *)"  # Todos los días a las 12 AM UTC
+}
+
+# Target para la regla de EventBridge
+resource "aws_cloudwatch_event_target" "backup_target" {
+  rule      = aws_cloudwatch_event_rule.backup_schedule.name
+  target_id = "MongoDBBackup"
+  arn       = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:document/${aws_ssm_document.backup_script.name}"
+  role_arn  = aws_iam_role.backup_role.arn
+  
+  input = jsonencode({
+    InstanceIds = [aws_instance.mongo.id]
+    DocumentName = aws_ssm_document.backup_script.name
+  })
+}
+
+# Política IAM para permitir que la instancia de MongoDB ejecute comandos SSM
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.mongo_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
