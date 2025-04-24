@@ -167,6 +167,31 @@ EOF
   tags = { Name = "mongo-old" }
 }
 
+# Security group for EKS cluster
+resource "aws_security_group" "eks_cluster" {
+  name_prefix = "eks-cluster-sg-"
+  description = "Security group for EKS cluster"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # VULNERABILIDAD: Acceso público al API server
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "eks-cluster-sg"
+  }
+}
+
 # EKS Cluster (o k8s managed)
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
@@ -177,6 +202,13 @@ module "eks" {
 
   vpc_id      = module.vpc.vpc_id
   subnet_ids  = module.vpc.private_subnets
+
+  # Enable public access to API server
+  cluster_endpoint_public_access = true
+  cluster_endpoint_private_access = true
+
+  # Configure access to API server
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]  # VULNERABILIDAD: Acceso público al API server
 
   # Enable IRSA
   enable_irsa = true
@@ -239,34 +271,6 @@ module "eks" {
     Environment = "production"
     Terraform   = "true"
   }
-}
-
-# Crear el ConfigMap aws-auth directamente
-resource "kubernetes_config_map" "aws_auth" {
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
-
-  data = {
-    mapRoles = yamlencode([
-      {
-        rolearn  = module.eks.eks_managed_node_groups["worker"].iam_role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = ["system:bootstrappers", "system:nodes"]
-      },
-      {
-        rolearn  = module.eks.cluster_iam_role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = ["system:masters"]
-      }
-    ])
-    mapUsers = yamlencode([])
-  }
-
-  depends_on = [
-    module.eks
-  ]
 }
 
 # Bucket S3 para backups (modificado para evitar acceso público)
@@ -407,7 +411,6 @@ resource "aws_security_group" "eks_nodes" {
 resource "kubernetes_deployment" "app" {
   depends_on = [
     module.eks,
-    kubernetes_config_map.aws_auth,
     aws_iam_role_policy_attachment.ssm_policy
   ]
 
@@ -475,7 +478,6 @@ resource "kubernetes_deployment" "app" {
 resource "kubernetes_service" "app" {
   depends_on = [
     module.eks,
-    kubernetes_config_map.aws_auth,
     kubernetes_deployment.app
   ]
 
