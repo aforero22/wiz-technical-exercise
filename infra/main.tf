@@ -94,15 +94,17 @@ module "eks" {
     disk_size = 20
   }
 
-  self_managed_node_groups = {
-    worker_group = {
-      desired_size        = 2
-      min_size            = 1
-      max_size            = 3
-      instance_type       = "t3.medium"
-      asg_desired_capacity = 2
-    }
+  eks_managed_node_groups = {
+  worker = {
+    desired_size   = 2
+    min_size       = 1
+    max_size       = 3
+    instance_types = ["t3.medium"]
   }
+ }
+
+  #
+  create_aws_auth_configmap = true
 }
 
 
