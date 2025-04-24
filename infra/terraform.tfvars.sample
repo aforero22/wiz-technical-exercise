@@ -1,6 +1,21 @@
+# Archivo de ejemplo para variables de Terraform
+# Este archivo debe ser copiado a terraform.tfvars y modificado según sea necesario
+
+# Región de AWS donde se desplegarán los recursos
 region             = "us-east-1"
+
+# Bloque CIDR para la VPC
 vpc_cidr           = "10.0.0.0/16"
+
+# Lista de bloques CIDR para subredes públicas
 public_subnets     = ["10.0.1.0/24"]
+
+# Lista de bloques CIDR para subredes privadas
 private_subnets    = ["10.0.2.0/24"]
+
+# ID de la AMI para la instancia de MongoDB
+# VULNERABILIDAD: Se utiliza Ubuntu 16.04 LTS (EOL)
 mongo_ami          = "ami-0c55b159cbfafe1f0"
+
+# Tipo de instancia EC2 para MongoDB
 mongo_instance_type = "t2.micro"

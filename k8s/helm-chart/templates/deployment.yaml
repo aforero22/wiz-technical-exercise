@@ -1,8 +1,11 @@
- apiVersion: apps/v1
+# Despliegue de la aplicación Wiz Exercise
+# Este archivo define el recurso Deployment de Kubernetes para la aplicación
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: wiz-app
 spec:
+  # Número de réplicas definido en values.yaml
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
@@ -14,10 +17,18 @@ spec:
     spec:
       containers:
         - name: wizard
+          # Imagen definida en values.yaml
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          # Política de extracción de imagen definida en values.yaml
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # VULNERABILIDAD: No se definen límites de recursos (CPU, memoria)
+          # VULNERABILIDAD: No se define un usuario no root para ejecutar el contenedor
           env:
             - name: MONGO_URI
+              # URI de conexión a MongoDB definida en values.yaml
+              # VULNERABILIDAD: Credenciales en texto plano
               value: {{ .Values.mongo.uri | quote }}
           ports:
             - containerPort: 80
+          # VULNERABILIDAD: No se definen health checks
+          # VULNERABILIDAD: No se definen security contexts

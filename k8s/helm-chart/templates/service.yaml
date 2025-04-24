@@ -1,8 +1,13 @@
+# Configuración del servicio para la aplicación
+# Este archivo define el servicio que expone la aplicación
 apiVersion: v1
 kind: Service
 metadata:
   name: wiz-app-svc
 spec:
+  # Tipo de servicio definido en values.yaml (LoadBalancer)
+  # VULNERABILIDAD: LoadBalancer expone la aplicación directamente a Internet
+  # En producción, debería usar un Ingress con TLS
   type: {{ .Values.service.type }}
   selector:
     app: wiz-app

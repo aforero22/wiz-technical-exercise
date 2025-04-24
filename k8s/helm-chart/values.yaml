@@ -1,10 +1,27 @@
+# Valores por defecto para el chart de Helm
+# Este archivo define los valores configurables para el despliegue
+
+# Número de réplicas del despliegue
 replicaCount: 2
+
+# Configuración de la imagen de Docker
 image:
+  # URL del registro de contenedores
   repository: "<REGISTRY_URL>/wiz-app"
+  # Política de extracción de imagen
   pullPolicy: IfNotPresent
+  # Etiqueta de la imagen
   tag: "latest"
+
+# Configuración del servicio
 service:
+  # Tipo de servicio (LoadBalancer, NodePort, ClusterIP)
   type: LoadBalancer
+  # Puerto del servicio
   port: 80
+
+# Configuración de MongoDB
 mongo:
+  # URI de conexión a MongoDB
+  # VULNERABILIDAD: Credenciales en texto plano
   uri: "mongodb://<USER>:<PASS>@<MONGO_HOST>:27017/db" 

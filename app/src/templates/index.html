@@ -1,10 +1,20 @@
 <!DOCTYPE html>
+<!-- 
+    Plantilla principal de la aplicación de gestión de tareas.
+    VULNERABILIDADES:
+    1. No hay protección CSRF en el formulario
+    2. No hay sanitización de la salida de datos
+    3. No hay validación del lado del cliente
+    4. Los IDs de las tareas son expuestos directamente en la URL
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wiz Exercise App</title>
+    <!-- Estilos CSS inline - VULNERABILIDAD: No hay Content Security Policy -->
     <style>
+        /* Estilos básicos para la interfaz de usuario */
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
@@ -14,6 +24,7 @@
         h1 {
             color: #333;
         }
+        /* Estilos para el formulario de entrada */
         .task-form {
             margin-bottom: 20px;
         }
@@ -28,6 +39,7 @@
             border: none;
             cursor: pointer;
         }
+        /* Estilos para la lista de tareas */
         .task-list {
             list-style-type: none;
             padding: 0;
@@ -51,6 +63,7 @@
 <body>
     <h1>Wiz Exercise Task Manager</h1>
     
+    <!-- Formulario para añadir nuevas tareas - VULNERABILIDAD: Sin token CSRF -->
     <div class="task-form">
         <form action="/add" method="post">
             <input type="text" name="task" class="task-input" placeholder="Enter a new task" required>
@@ -58,6 +71,7 @@
         </form>
     </div>
     
+    <!-- Lista de tareas - VULNERABILIDAD: IDs expuestos en URLs -->
     <ul class="task-list">
         {% for task in tasks %}
         <li class="task-item">
