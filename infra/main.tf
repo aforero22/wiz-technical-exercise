@@ -312,20 +312,24 @@ resource "random_id" "cloudtrail" {
   byte_length = 4
 }
 
+# Bucket S3 para CloudTrail y AWS Config
 resource "aws_s3_bucket" "cloudtrail" {
   bucket = "wiz-exercise-cloudtrail-logs-${random_id.cloudtrail.hex}"
 }
 
+# VULNERABILIDAD: Configuración de acceso público al bucket
 resource "aws_s3_bucket_public_access_block" "cloudtrail_block" {
   bucket                  = aws_s3_bucket.cloudtrail.id
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+  block_public_acls       = false  # VULNERABILIDAD: ACLs públicas permitidas
+  block_public_policy     = false  # VULNERABILIDAD: Políticas públicas permitidas
+  ignore_public_acls      = false  # VULNERABILIDAD: ACLs públicas no ignoradas
+  restrict_public_buckets = false  # VULNERABILIDAD: Buckets públicos permitidos
 }
 
+# Obtener el ID de la cuenta actual para las políticas
 data "aws_caller_identity" "current" {}
 
+# Política del bucket que permite acceso a CloudTrail y AWS Config
 resource "aws_s3_bucket_policy" "cloudtrail_policy" {
   bucket = aws_s3_bucket.cloudtrail.id
   policy = jsonencode({
@@ -345,6 +349,20 @@ resource "aws_s3_bucket_policy" "cloudtrail_policy" {
         Sid       = "AWSCloudTrailGetBucketAcl"
         Effect    = "Allow"
         Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:GetBucketAcl"
+        Resource  = [aws_s3_bucket.cloudtrail.arn]
+      },
+      {
+        Sid       = "AWSConfigWrite"
+        Effect    = "Allow"
+        Principal = { Service = "config.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = ["${aws_s3_bucket.cloudtrail.arn}/config/*"]  # Permite a AWS Config escribir en el prefijo /config/
+      },
+      {
+        Sid       = "AWSConfigGetBucketAcl"
+        Effect    = "Allow"
+        Principal = { Service = "config.amazonaws.com" }
         Action    = "s3:GetBucketAcl"
         Resource  = [aws_s3_bucket.cloudtrail.arn]
       }
@@ -384,6 +402,11 @@ resource "kubernetes_deployment" "app" {
     module.eks_aws_auth,
     aws_iam_role_policy_attachment.ssm_policy
   ]
+
+  # Configurar un timeout largo para la creación debido a la inicialización del cluster
+  timeouts {
+    create = "30m"  # Dar tiempo suficiente para que los nodos estén listos
+  }
 
   metadata {
     name = "wiz-app"
@@ -447,6 +470,11 @@ resource "kubernetes_service" "app" {
     module.eks_aws_auth,
     kubernetes_deployment.app
   ]
+
+  # Configurar un timeout largo para la creación del servicio LoadBalancer
+  timeouts {
+    create = "30m"  # Dar tiempo suficiente para la provisión del LoadBalancer
+  }
 
   metadata {
     name = "wiz-app"
