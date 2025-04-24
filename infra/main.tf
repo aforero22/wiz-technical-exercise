@@ -534,7 +534,7 @@ mainSteps:
         - 'TIMESTAMP=$(date +"%Y%m%d_%H%M%S")'
         - 'FILENAME="dump_${TIMESTAMP}.archive"'
         - 'MONGO_CONN_URI="mongodb://localhost:27017/wizdb"'
-        - 'AWS_BUCKET_NAME="{{ aws_s3_bucket.backups.bucket }}"'
+        - 'AWS_BUCKET_NAME="${aws_s3_bucket.backups.bucket}"'
         - ''
         - 'echo "-> Iniciando backup de MongoDB"'
         - 'mongodump --uri "$MONGO_CONN_URI" --archive="$FILENAME"'
