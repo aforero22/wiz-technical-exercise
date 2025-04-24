@@ -1,0 +1,10 @@
+replicaCount: 2
+image:
+  repository: "<REGISTRY_URL>/wiz-app"
+  pullPolicy: IfNotPresent
+  tag: "latest"
+service:
+  type: LoadBalancer
+  port: 80
+mongo:
+  uri: "mongodb://<USER>:<PASS>@<MONGO_HOST>:27017/db" 

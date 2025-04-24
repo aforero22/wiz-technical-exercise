@@ -1,0 +1,5 @@
+apiVersion: v2
+name: wiz-app
+description: Aplicación sample para Wiz Exercise
+version: 0.1.0
+appVersion: "1.0"

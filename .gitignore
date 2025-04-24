@@ -1,0 +1,84 @@
+# --------------------
+# Sistema Operativo
+# --------------------
+.DS_Store
+Thumbs.db
+
+# --------------------
+# Entornos Python
+# --------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.Python
+env/
+venv/
+.venv/
+
+# --------------------
+# Dependencias & Builds
+# --------------------
+build/
+dist/
+*.whl
+pip-wheel-metadata/
+
+# --------------------
+# Terraform
+# --------------------
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+override.tf
+override.tf.json
+*.backup
+terraform.tfvars
+terraform.tfvars.json
+
+# --------------------
+# Kubernetes y Helm
+# --------------------
+.kube/
+helmfile.d/
+charts/
+
+# --------------------
+# Docker
+# --------------------
+docker-compose.override.yml
+.docker/
+
+# --------------------
+# Scripts & Backups
+# --------------------
+*.archive
+
+# --------------------
+# AWS Stuff
+# --------------------
+.aws/credentials
+.aws/session
+
+# --------------------
+# Logs & Bases de Datos
+# --------------------
+*.log
+*.sqlite3
+
+# --------------------
+# IDEs & Editores
+# --------------------
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# --------------------
+# Otros
+# --------------------
+LICENSE
+README.md

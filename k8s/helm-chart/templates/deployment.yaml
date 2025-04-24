@@ -1,0 +1,23 @@
+ apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiz-app
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: wiz-app
+  template:
+    metadata:
+      labels:
+        app: wiz-app
+    spec:
+      containers:
+        - name: wizard
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: MONGO_URI
+              value: {{ .Values.mongo.uri | quote }}
+          ports:
+            - containerPort: 80
