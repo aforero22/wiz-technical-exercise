@@ -261,8 +261,7 @@ module "eks_aws_auth" {
   aws_auth_accounts = []
 
   depends_on = [
-    module.eks,
-    kubernetes_deployment.app
+    module.eks
   ]
 }
 
