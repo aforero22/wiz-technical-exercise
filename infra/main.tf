@@ -196,11 +196,3 @@ resource "aws_s3_bucket_policy" "cloudtrail_policy" {
     ]
   })
 }
-
-resource "aws_cloudtrail" "trail" {
-  name                          = "wiz-trail"
-  s3_bucket_name                = aws_s3_bucket.cloudtrail.id
-  include_global_service_events = true
-  is_multi_region_trail         = true
-  enable_log_file_validation    = true
-}
