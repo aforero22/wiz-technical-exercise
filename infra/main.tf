@@ -5,7 +5,7 @@
 # VPC y redes
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "4.15.0"
+  version = "5.21.0"
 
   name = "wiz-exercise"
   cidr = var.vpc_cidr
@@ -81,7 +81,7 @@ resource "aws_instance" "mongo" {
 # EKS Cluster (o k8s managed)
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version         = "19.25.0"
+  version         = "20.36.0"
 
   cluster_name    = "wiz-cluster"
   cluster_version = "1.27"
