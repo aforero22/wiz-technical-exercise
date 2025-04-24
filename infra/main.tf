@@ -82,15 +82,30 @@ resource "aws_instance" "mongo" {
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   version         = "18.0.0"
+
   cluster_name    = "wiz-cluster"
   cluster_version = "1.21"
-  subnets         = module.vpc.private_subnets
-  vpc_id          = module.vpc.vpc_id
 
-  worker_groups = [
-    { instance_type = "t3.medium", asg_desired_capacity = 2 }
-  ]
+  vpc_id      = module.vpc.vpc_id
+  subnet_ids  = module.vpc.private_subnets
+
+  eks_managed_node_group_defaults = {
+    ami_type  = "AL2_x86_64"
+    disk_size = 20
+  }
+
+  eks_managed_node_groups = {
+    default = {
+      desired_size    = 2
+      min_size        = 1
+      max_size        = 3
+      instance_types  = ["t3.medium"]
+      capacity_type   = "ON_DEMAND"
+      update_config   = { max_unavailable_percentage = 50 }
+    }
+  }
 }
+
 
 # Bucket S3 público
 resource "aws_s3_bucket" "backups" {
