@@ -60,6 +60,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           MONGO_IP: ${{ steps.get-vars.outputs.mongo_ip }}
           ECR_URL: ${{ steps.get-vars.outputs.ecr_url }}
+          KUBECONFIG: "${{ env.HOME }}/.kube/config"
         run: |
           cd app/k8s
           # Reemplazar variables en los manifiestos
