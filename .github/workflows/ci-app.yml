@@ -59,10 +59,20 @@ jobs:
         id: vars
         working-directory: infra
         run: |
+          # Instalar jq si no está disponible
+          # sudo apt-get update && sudo apt-get install -y jq 
+          
+          # Debug: Mostrar el contenido de outputs.json ANTES de jq
+          echo "--- Contenido de outputs.json ---"
+          cat outputs.json || echo "Error leyendo outputs.json"
+          echo "--- Fin outputs.json ---"
+          
           echo "Parsing outputs.json..."
+          # Leer el archivo outputs.json y extraer valores con jq
           MONGO_IP=$(jq -r '.mongo_public_ip.value' outputs.json)
           ECR_URL=$(jq -r '.ecr_repository_url.value' outputs.json)
           
+          # Verificar valores extraídos
           echo "Extracted MONGO_IP: [$MONGO_IP]"
           echo "Extracted ECR_URL: [$ECR_URL]"
           
