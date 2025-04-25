@@ -55,7 +55,7 @@ jobs:
           
           # Obtener outputs directamente y limpiar mensajes de debug
           echo "Getting MONGO_IP..."
-          MONGO_IP=$(terraform output -raw mongo_public_ip | tail -n +2 | sed 's/::debug::.*$//')
+          MONGO_IP=$(terraform output -raw mongo_private_ip | tail -n +2 | sed 's/::debug::.*$//')
           echo "MONGO_IP: [$MONGO_IP]"
           
           echo "Getting MONGO_PUBLIC_IP..."
@@ -86,6 +86,27 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           TERRAFORM_CLI_PATH: ${{ env.TERRAFORM_CLI_PATH }}
+
+      - name: Verify MongoDB Status
+        run: |
+          echo "Verifying MongoDB status on instance..."
+          # Obtener el ID de la instancia de MongoDB
+          MONGO_INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=mongo-old" --query 'Reservations[*].Instances[*].InstanceId' --output text)
+          
+          # Verificar el estado de MongoDB usando SSM
+          echo "Checking MongoDB service status..."
+          aws ssm start-session --target $MONGO_INSTANCE_ID --document-name AWS-StartInteractiveCommand --parameters command="sudo systemctl status mongod || sudo systemctl start mongod"
+          
+          # Verificar que MongoDB está escuchando en el puerto correcto
+          echo "Verifying MongoDB is listening on port 27017..."
+          aws ssm start-session --target $MONGO_INSTANCE_ID --document-name AWS-StartInteractiveCommand --parameters command="sudo netstat -tulpn | grep 27017 || exit 1"
+          
+          echo "MongoDB verification completed"
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       
       - name: Install dependencies
         run: |
