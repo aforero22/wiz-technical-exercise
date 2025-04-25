@@ -25,10 +25,8 @@ jobs:
         run: terraform validate
         working-directory: infra
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan
         working-directory: infra
       - name: Terraform Apply
-        # Comentado para permitir la aplicación en cualquier rama
-        #if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve
         working-directory: infra
