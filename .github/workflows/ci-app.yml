@@ -51,9 +51,11 @@ jobs:
       - name: Set Output Env Vars
         run: |
           echo "Getting raw outputs and cleaning..."
-          # Obtener outputs en formato JSON y extraer valores usando jq
-          MONGO_IP=$(terraform output -json | jq -r '.mongo_private_ip.value')
-          ECR_URL=$(terraform output -json | jq -r '.ecr_repository_url.value')
+          cd infra
+          
+          # Obtener outputs usando terraform show
+          MONGO_IP=$(terraform show | grep -A 1 "mongo_private_ip" | tail -n 1 | tr -d ' "')
+          ECR_URL=$(terraform show | grep -A 1 "ecr_repository_url" | tail -n 1 | tr -d ' "')
           
           # Verificar valores extraídos
           echo "Cleaned MONGO_IP: [$MONGO_IP]"
