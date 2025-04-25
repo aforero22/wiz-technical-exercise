@@ -48,34 +48,23 @@ jobs:
         run: |
           aws eks update-kubeconfig --name wiz-cluster-new --region us-east-1
       
-      - name: Get Terraform Outputs (JSON)
-        id: get_outputs
-        run: |
-          terraform output -json > outputs.json
-          echo "Saved Terraform outputs to outputs.json"
-        working-directory: infra
-      
-      - name: Parse Outputs and Set Env
+      - name: Get Outputs and Set Env
         id: vars
         working-directory: infra
         run: |
           # Instalar jq si no está disponible
           # sudo apt-get update && sudo apt-get install -y jq 
-          
-          # Debug: Mostrar el contenido de outputs.json ANTES de jq
-          echo "--- Contenido de outputs.json ---"
-          cat outputs.json || echo "Error leyendo outputs.json"
-          echo "--- Fin outputs.json ---"
-          
-          echo "Parsing outputs.json..."
-          # Leer el archivo outputs.json y extraer valores con jq
-          MONGO_IP=$(jq -r '.mongo_public_ip.value' outputs.json)
-          ECR_URL=$(jq -r '.ecr_repository_url.value' outputs.json)
+          echo "Getting outputs via terraform output -json | jq ..."
+          # Ejecutar terraform output -json y pasar directamente a jq
+          JSON_OUTPUT=$(terraform output -json)
+          MONGO_IP=$(echo "$JSON_OUTPUT" | jq -r '.mongo_public_ip.value')
+          ECR_URL=$(echo "$JSON_OUTPUT" | jq -r '.ecr_repository_url.value')
           
           # Verificar valores extraídos
           echo "Extracted MONGO_IP: [$MONGO_IP]"
           echo "Extracted ECR_URL: [$ECR_URL]"
           
+          # Escribir en GITHUB_ENV
           echo "MONGO_IP=$MONGO_IP" >> $GITHUB_ENV
           echo "ECR_URL=$ECR_URL" >> $GITHUB_ENV
           echo "Wrote values to GITHUB_ENV"
