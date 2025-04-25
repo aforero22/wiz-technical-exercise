@@ -422,12 +422,12 @@ resource "aws_security_group" "eks_nodes" {
     security_groups = [module.eks.cluster_security_group_id]
   }
 
-  # Añadido: Regla EGRESS explícita para permitir conexión a MongoDB SG
+  # Modificado: Regla EGRESS para permitir conexión a MongoDB usando CIDR
   egress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [aws_security_group.mongo_sg.id]
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    cidr_blocks = var.public_subnets  # Usar los CIDRs de las subredes públicas donde está MongoDB
   }
 
   # Regla EGRESS existente para permitir todo lo demás hacia afuera
