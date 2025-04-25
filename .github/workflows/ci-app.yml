@@ -143,23 +143,21 @@ jobs:
           
           kubectl apply -f . --validate=false
           
-          # Esperar a que el deployment esté disponible
-          echo "Esperando a que el deployment esté disponible..."
-          kubectl rollout status deployment/wiz-app || true
+          # Listar los pods existentes
+          echo "--- Lista de pods ---"
+          kubectl get pods
+          echo "--- Fin de la lista de pods ---"
           
-          # Obtener los logs del contenedor
-          echo "Obteniendo logs del contenedor..."
-          POD_NAME=$(kubectl get pods -l app=wiz-app -o jsonpath="{.items[0].metadata.name}")
-          echo "Nombre del pod: $POD_NAME"
+          # Obtener los logs de todos los pods
+          echo "Obteniendo logs de los pods..."
+          PODS=$(kubectl get pods -l app=wiz-app -o jsonpath="{.items[*].metadata.name}")
           
-          # Esperar un poco para que el pod tenga tiempo de iniciar
-          sleep 10
-          
-          echo "--- Logs del contenedor ---"
-          kubectl logs $POD_NAME || echo "No se pudieron obtener los logs"
-          echo "--- Fin de los logs ---"
-          
-          # Obtener descripción del pod para más detalles
-          echo "--- Descripción del pod ---"
-          kubectl describe pod $POD_NAME || echo "No se pudo obtener la descripción del pod"
-          echo "--- Fin de la descripción ---"
+          for POD in $PODS; do
+            echo "--- Logs del pod $POD ---"
+            kubectl logs $POD || echo "No se pudieron obtener los logs del pod $POD"
+            echo "--- Fin de los logs del pod $POD ---"
+            
+            echo "--- Descripción del pod $POD ---"
+            kubectl describe pod $POD || echo "No se pudo obtener la descripción del pod $POD"
+            echo "--- Fin de la descripción del pod $POD ---"
+          done

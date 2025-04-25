@@ -24,4 +24,4 @@ COPY wizexercise.txt /
 
 # Comando para ejecutar la aplicación
 # VULNERABILIDAD: No se especifican límites de recursos (CPU, memoria)
-ENTRYPOINT ["python", "src/app.py"]
+ENTRYPOINT ["python", "app.py"]
