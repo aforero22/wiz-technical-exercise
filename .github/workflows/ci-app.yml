@@ -106,94 +106,24 @@ jobs:
           sed -i "s|\${ECR_URL}|${{ steps.login-ecr.outputs.registry }}|g" app/k8s/deployment.yaml
       
       - name: Deploy to EKS
-        env:
-          IMAGE_TAG: ${{ github.sha }}
         run: |
-          export KUBECONFIG="$HOME/.kube/config"
+          echo "Applying deployment yaml..."
+          # kubectl debería usar $HOME/.kube/config por defecto, actualizado por 'aws eks update-kubeconfig'
+          kubectl apply -f app/k8s/deployment.yaml
           
-          echo "KUBECONFIG=$KUBECONFIG"
-          echo "--- Kubeconfig contents ---"
-          cat $KUBECONFIG || echo "Kubeconfig file not found or unreadable"
-          echo "--- End Kubeconfig ---"
-          
-          cd app/k8s
-          
-          echo "Valor de ECR_URL antes de sed: [$ECR_URL]"
-          echo "Valor de MONGO_IP antes de sed: [$MONGO_IP]"
-          
-          # Crear un archivo temporal con los valores correctos
-          cat > deployment.yaml.tmp << EOF
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: wiz-app
-            labels:
-              app: wiz-app
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: wiz-app
-            template:
-              metadata:
-                labels:
-                  app: wiz-app
-              spec:
-                securityContext:
-                  runAsUser: 0
-                  runAsGroup: 0
-                  fsGroup: 0
-                containers:
-                  - name: wiz-app
-                    image: "${ECR_URL}:${IMAGE_TAG}"
-                    env:
-                      - name: MONGODB_URI
-                        value: "mongodb://${MONGO_IP}:27017/wizdb"
-                    resources:
-                      limits:
-                        cpu: "0.5"
-                        memory: "512Mi"
-                      requests:
-                        cpu: "250m"
-                        memory: "50Mi"
-          EOF
-          
-          mv deployment.yaml.tmp deployment.yaml
-          
-          echo "--- Contenido deployment.yaml después de sed ---"
-          cat deployment.yaml || echo "Error leyendo deployment.yaml"
-          echo "--- Fin deployment.yaml ---"
-          
-          kubectl apply -f . --validate=false
-          
-          # Listar los pods existentes
-          echo "--- Lista de pods ---"
-          kubectl get pods
-          echo "--- Fin de la lista de pods ---"
-          
-          # Obtener los logs de todos los pods
-          echo "Obteniendo logs de los pods..."
-          PODS=$(kubectl get pods -l app=wiz-app -o jsonpath="{.items[*].metadata.name}")
-          
-          for POD in $PODS; do
-            echo "--- Logs del pod $POD ---"
-            kubectl logs $POD || echo "No se pudieron obtener los logs del pod $POD"
-            echo "--- Fin de los logs del pod $POD ---"
-            
-            echo "--- Descripción del pod $POD ---"
-            kubectl describe pod $POD || echo "No se pudo obtener la descripción del pod $POD"
-            echo "--- Fin de la descripción del pod $POD ---"
-          done
+          echo "Deployment applied. Waiting for rollout status..."
+          kubectl rollout status deployment/wiz-app --timeout=120s # Aumentado timeout
 
       - name: Get Pod Info for Diagnosis
-        if: failure() # Ejecutar solo si el paso anterior falla
+        if: failure() # Ejecutar solo si el paso anterior falla o hace timeout
         run: |
-          echo "Deployment failed. Getting pod info..."
-          kubectl get pods -l app=wiz-app
+          echo "Deployment failed or timed out. Getting pod info..."
+          # kubectl debería usar $HOME/.kube/config por defecto
+          kubectl get pods -l app=wiz-app -o wide
           PODS=$(kubectl get pods -l app=wiz-app -o jsonpath='{.items[*].metadata.name}')
           for POD in $PODS; do
-            echo "--- Logs for pod $POD ---"
-            kubectl logs $POD --tail=50 || echo "Could not get logs for pod $POD"
             echo "--- Describe pod $POD ---"
             kubectl describe pod $POD || echo "Could not describe pod $POD"
+            echo "--- Logs for pod $POD (last 50 lines) ---"
+            kubectl logs $POD --tail=50 || echo "Could not get logs for pod $POD"
           done
