@@ -35,6 +35,11 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
       
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7 # O la versión que estés usando
+      
       - name: Configure kubectl
         run: |
           aws eks update-kubeconfig --name wiz-cluster-new --region us-east-1
