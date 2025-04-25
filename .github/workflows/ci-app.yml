@@ -53,13 +53,27 @@ jobs:
           echo "Getting raw outputs and cleaning..."
           cd infra
           
-          # Obtener outputs usando terraform show
-          MONGO_IP=$(terraform show | grep -A 1 "mongo_private_ip" | tail -n 1 | tr -d ' "')
-          ECR_URL=$(terraform show | grep -A 1 "ecr_repository_url" | tail -n 1 | tr -d ' "')
+          # Obtener outputs en formato JSON y extraer valores usando jq
+          echo "Running terraform output -json..."
+          TERRAFORM_OUTPUT=$(terraform output -json)
+          echo "Raw terraform output:"
+          echo "$TERRAFORM_OUTPUT"
+          
+          echo "Extracting values..."
+          MONGO_IP=$(echo "$TERRAFORM_OUTPUT" | jq -r '.mongo_private_ip.value // empty')
+          ECR_URL=$(echo "$TERRAFORM_OUTPUT" | jq -r '.ecr_repository_url.value // empty')
           
           # Verificar valores extraídos
-          echo "Cleaned MONGO_IP: [$MONGO_IP]"
-          echo "Cleaned ECR_URL: [$ECR_URL]"
+          echo "Extracted MONGO_IP: [$MONGO_IP]"
+          echo "Extracted ECR_URL: [$ECR_URL]"
+          
+          # Verificar que los valores no estén vacíos
+          if [ -z "$MONGO_IP" ] || [ -z "$ECR_URL" ]; then
+            echo "Error: Failed to extract required values"
+            echo "MONGO_IP is empty: $([ -z "$MONGO_IP" ] && echo "yes" || echo "no")"
+            echo "ECR_URL is empty: $([ -z "$ECR_URL" ] && echo "yes" || echo "no")"
+            exit 1
+          fi
           
           # Escribir en GITHUB_ENV
           echo "MONGO_IP=$MONGO_IP" >> $GITHUB_ENV
