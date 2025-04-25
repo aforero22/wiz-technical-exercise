@@ -52,16 +52,23 @@ jobs:
         id: get-vars
         run: |
           cd infra
-          echo "::set-output name=mongo_ip::$(terraform output -raw mongo_public_ip)"
-          echo "::set-output name=ecr_url::$(terraform output -raw ecr_repository_url)"
+          # Obtener valores en variables temporales
+          TF_MONGO_IP=$(terraform output -raw mongo_public_ip)
+          TF_ECR_URL=$(terraform output -raw ecr_repository_url)
+          
+          # Escribir en GITHUB_ENV
+          echo "MONGO_IP=$TF_MONGO_IP" >> $GITHUB_ENV
+          echo "ECR_URL=$TF_ECR_URL" >> $GITHUB_ENV
+          
+          # Debug: Mostrar qué se escribió
+          echo "Wrote MONGO_IP to GITHUB_ENV"
+          echo "Wrote ECR_URL to GITHUB_ENV"
       
       - name: Deploy to EKS
         env:
           IMAGE_TAG: ${{ github.sha }}
-          MONGO_IP: ${{ steps.get-vars.outputs.mongo_ip }}
-          ECR_URL: ${{ steps.get-vars.outputs.ecr_url }}
         run: |
-          # Exportar KUBECONFIG explícitamente en el script
+          # KUBECONFIG ya no es necesario aquí, se exporta al principio del script
           export KUBECONFIG="$HOME/.kube/config"
           
           # Debug: Verificar la variable y el archivo
@@ -72,8 +79,19 @@ jobs:
           
           # Proceder con el despliegue
           cd app/k8s
+          
+          # Debug: Verificar las variables ANTES de sed
+          echo "Valor de ECR_URL antes de sed: [$ECR_URL]"
+          echo "Valor de MONGO_IP antes de sed: [$MONGO_IP]"
+          
           # Reemplazar variables en los manifiestos
           sed -i "s|\${ECR_URL}|${ECR_URL}|g; s|\${MONGO_IP}|${MONGO_IP}|g" *.yaml
+          
+          # Debug: Mostrar el contenido de deployment.yaml DESPUÉS de sed
+          echo "--- Contenido deployment.yaml después de sed ---"
+          cat deployment.yaml || echo "Error leyendo deployment.yaml"
+          echo "--- Fin deployment.yaml ---"
+          
           # Aplicar los manifiestos (desactivando validación)
           kubectl apply -f . --validate=false
           # Verificar el despliegue
