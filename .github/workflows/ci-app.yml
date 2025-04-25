@@ -51,17 +51,16 @@ jobs:
       - name: Terraform Plan for Outputs
         id: plan
         run: |
-          cd infra
           # Solo generar el plan, la salida se extraerá en el siguiente paso
           terraform plan -out=tfplan
         working-directory: infra
       
       - name: Extract Terraform Outputs
         id: vars
+        working-directory: infra
         run: |
           # Instalar jq si no está disponible (runners de Ubuntu suelen tenerlo)
           # sudo apt-get update && sudo apt-get install -y jq 
-          cd infra
           echo "Extracting outputs from tfplan..."
           MONGO_IP=$(terraform show -json tfplan | jq -r '.outputs.mongo_public_ip.value')
           ECR_URL=$(terraform show -json tfplan | jq -r '.outputs.ecr_repository_url.value')
