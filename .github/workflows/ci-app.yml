@@ -48,20 +48,38 @@ jobs:
         run: |
           aws eks update-kubeconfig --name wiz-cluster-new --region us-east-1
       
-      - name: Get MongoDB IP and ECR URL
-        id: get-vars
+      - name: Terraform Plan for Outputs
+        id: plan
         run: |
           cd infra
-          echo "::set-output name=mongo_ip::$(terraform output -raw mongo_public_ip)"
-          echo "::set-output name=ecr_url::$(terraform output -raw ecr_repository_url)"
+          # Solo generar el plan, la salida se extraerá en el siguiente paso
+          terraform plan -out=tfplan
+        working-directory: infra
+      
+      - name: Extract Terraform Outputs
+        id: vars
+        run: |
+          # Instalar jq si no está disponible (runners de Ubuntu suelen tenerlo)
+          # sudo apt-get update && sudo apt-get install -y jq 
+          cd infra
+          echo "Extracting outputs from tfplan..."
+          MONGO_IP=$(terraform show -json tfplan | jq -r '.outputs.mongo_public_ip.value')
+          ECR_URL=$(terraform show -json tfplan | jq -r '.outputs.ecr_repository_url.value')
+          
+          # Verificar valores extraídos
+          echo "Extracted MONGO_IP: [$MONGO_IP]"
+          echo "Extracted ECR_URL: [$ECR_URL]"
+          
+          # Escribir en GITHUB_ENV
+          echo "MONGO_IP=$MONGO_IP" >> $GITHUB_ENV
+          echo "ECR_URL=$ECR_URL" >> $GITHUB_ENV
+          echo "Wrote values to GITHUB_ENV"
       
       - name: Deploy to EKS
         env:
           IMAGE_TAG: ${{ github.sha }}
-          MONGO_IP: ${{ steps.get-vars.outputs.mongo_ip }}
-          ECR_URL: ${{ steps.get-vars.outputs.ecr_url }}
         run: |
-          # Exportar KUBECONFIG explícitamente en el script
+          # KUBECONFIG ya no es necesario aquí, se exporta al principio del script
           export KUBECONFIG="$HOME/.kube/config"
           
           # Debug: Verificar la variable y el archivo
@@ -72,8 +90,19 @@ jobs:
           
           # Proceder con el despliegue
           cd app/k8s
+          
+          # Debug: Verificar las variables ANTES de sed
+          echo "Valor de ECR_URL antes de sed: [$ECR_URL]"
+          echo "Valor de MONGO_IP antes de sed: [$MONGO_IP]"
+          
           # Reemplazar variables en los manifiestos
           sed -i "s|\${ECR_URL}|${ECR_URL}|g; s|\${MONGO_IP}|${MONGO_IP}|g" *.yaml
+          
+          # Debug: Mostrar el contenido de deployment.yaml DESPUÉS de sed
+          echo "--- Contenido deployment.yaml después de sed ---"
+          cat deployment.yaml || echo "Error leyendo deployment.yaml"
+          echo "--- Fin deployment.yaml ---"
+          
           # Aplicar los manifiestos (desactivando validación)
           kubectl apply -f . --validate=false
           # Verificar el despliegue
