@@ -580,3 +580,38 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   role       = aws_iam_role.mongo_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
+
+# ConfigMap aws-auth para mapear roles/usuarios IAM a Kubernetes RBAC
+# Gestionado por Terraform para incluir el rol de los nodos y el usuario interactivo
+resource "kubernetes_config_map_v1_data" "aws_auth" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+  force = true # Permite a Terraform tomar control de este ConfigMap
+  data = {
+    # Mapeo del Rol IAM de los Nodos EKS para permitirles unirse al clúster
+    mapRoles = yamlencode([
+      for role_arn in module.eks.eks_managed_node_groups_iam_role_arns : {
+        rolearn  = role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = [
+          "system:bootstrappers",
+          "system:nodes"
+        ]
+      }
+    ])
+    # Mapeo del usuario IAM interactivo para darle permisos de admin
+    mapUsers = yamlencode([
+      {
+        userarn  = "arn:aws:iam::277707137984:user/odl_user_1695962" # Tu ARN de usuario
+        username = "odl_user_1695962" # Nombre de usuario en K8s
+        groups   = [
+          "system:masters" # Grupo de administradores
+        ]
+      }
+    ])
+  }
+
+  depends_on = [module.eks] # Asegura que el clúster exista antes de crear el ConfigMap
+}
