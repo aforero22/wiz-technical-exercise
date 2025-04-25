@@ -62,7 +62,7 @@ resource "aws_security_group" "mongo_sg" {
     from_port       = 27017
     to_port         = 27017
     protocol        = "tcp"
-    security_groups = [module.eks.cluster_security_group_id]
+    security_groups = [module.eks.cluster_security_group_id, aws_security_group.eks_nodes.id]
   }
   egress {
     from_port   = 0
@@ -144,7 +144,7 @@ resource "aws_instance" "mongo" {
 apt-get update
 apt-get install -y gnupg
 wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 apt-get update
 apt-get install -y mongodb-org
 mkdir -p /data/db
@@ -603,6 +603,11 @@ resource "aws_cloudwatch_event_target" "backup_target" {
 
 # Política IAM para permitir que la instancia de MongoDB ejecute comandos SSM
 resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.mongo_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "mongo_ssm_policy" {
   role       = aws_iam_role.mongo_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }

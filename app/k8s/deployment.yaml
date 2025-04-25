@@ -21,14 +21,18 @@ spec:
         fsGroup: 0
       containers:
         - name: wiz-app
-          image: "${ECR_URL}:${IMAGE_TAG}"
+          image: ${ECR_URL}:latest
+          ports:
+            - containerPort: 8080
           env:
             - name: MONGODB_URI
-              value: mongodb://10.0.1.210:27017/wizdb
+              value: "mongodb://${MONGO_IP}:27017/wizdb"
+            - name: FLASK_DEBUG
+              value: "1"
           resources:
             limits:
               cpu: "500m"
-              memory: "512Mi"
+              memory: "256Mi"
             requests:
               cpu: "250m"
-              memory: "50Mi" 
+              memory: "128Mi" 
