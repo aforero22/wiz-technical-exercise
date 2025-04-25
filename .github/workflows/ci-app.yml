@@ -60,8 +60,17 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
           MONGO_IP: ${{ steps.get-vars.outputs.mongo_ip }}
           ECR_URL: ${{ steps.get-vars.outputs.ecr_url }}
-          KUBECONFIG: "${{ env.HOME }}/.kube/config"
         run: |
+          # Exportar KUBECONFIG explícitamente en el script
+          export KUBECONFIG="$HOME/.kube/config"
+          
+          # Debug: Verificar la variable y el archivo
+          echo "KUBECONFIG=$KUBECONFIG"
+          echo "--- Kubeconfig contents ---"
+          cat $KUBECONFIG || echo "Kubeconfig file not found or unreadable"
+          echo "--- End Kubeconfig ---"
+          
+          # Proceder con el despliegue
           cd app/k8s
           # Reemplazar variables en los manifiestos
           sed -i "s|\${ECR_URL}|${ECR_URL}|g; s|\${MONGO_IP}|${MONGO_IP}|g" *.yaml
