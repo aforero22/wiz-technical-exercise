@@ -21,10 +21,10 @@ spec:
         fsGroup: 0
       containers:
         - name: wiz-app
-          image: ${ECR_REPOSITORY_URL}:latest
+          image: "${ECR_URL}:latest"
           env:
             - name: MONGODB_URI
-              value: mongodb://${MONGO_IP}:27017/wizdb
+              value: "mongodb://${MONGO_IP}:27017/wizdb"
           resources:
             limits:
               cpu: "0.5"

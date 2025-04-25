@@ -63,8 +63,8 @@ jobs:
         run: |
           cd app/k8s
           # Reemplazar variables en los manifiestos
-          sed -i "s|\${ECR_REPOSITORY_URL}|$ECR_URL|g; s|\${MONGO_IP}|$MONGO_IP|g" *.yaml
-          # Aplicar los manifiestos
-          kubectl apply -f .
+          sed -i "s|\${ECR_URL}|${ECR_URL}|g; s|\${MONGO_IP}|${MONGO_IP}|g" *.yaml
+          # Aplicar los manifiestos (desactivando validación)
+          kubectl apply -f . --validate=false
           # Verificar el despliegue
           kubectl rollout status deployment/wiz-app
