@@ -97,8 +97,15 @@ jobs:
       
       - name: Replace Placeholders in Deployment
         run: |
+          echo "Replacing MONGO_IP with: ${{ env.MONGO_IP }}"
           sed -i "s|\${MONGO_IP}|${{ env.MONGO_IP }}|g" app/k8s/deployment.yaml
-          sed -i "s|\${ECR_URL}|${{ steps.login-ecr.outputs.registry }}|g" app/k8s/deployment.yaml
+          
+          echo "Replacing ECR_URL with: ${{ env.ECR_URL }}"
+          sed -i "s|\${ECR_URL}|${{ env.ECR_URL }}|g" app/k8s/deployment.yaml
+          
+          echo "--- Content of deployment.yaml after replacement ---"
+          cat app/k8s/deployment.yaml
+          echo "--- End of deployment.yaml content ---"
       
       - name: Deploy to EKS
         run: |
