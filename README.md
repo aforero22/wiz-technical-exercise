@@ -15,8 +15,9 @@ Este proyecto implementa:
    - Pipelines de CI/CD para infraestructura y aplicación.
    - Scripts para automatizar tareas como copias de seguridad.
 4. **Controles de Seguridad**:
-   - Implementación de controles preventivos y de detección.
-   - Configuración de registro de auditoría.
+   - AWS GuardDuty para detección de amenazas
+   - AWS Config para evaluación de configuración
+   - CloudTrail para auditoría
 
 ## Demostración
 
@@ -30,14 +31,15 @@ Este proyecto implementa:
 
 2. **Aplicación**:
    - Aplicación web accesible públicamente
-   - Conexión a MongoDB
-   - Backups automáticos
+   - Conexión a MongoDB sin autenticación
+   - Contenedores corriendo como root
 
 3. **Vulnerabilidades**:
    - Ver [VULNERABILITIES.md](VULNERABILITIES.md) para lista completa
-   - Demostración de acceso público a MongoDB
-   - Acceso a backups en S3
-   - Privilegios excesivos en contenedores
+   - MongoDB expuesto públicamente sin autenticación
+   - S3 bucket con acceso público
+   - Pods corriendo como root
+   - IAM roles con permisos excesivos
 
 4. **Controles de Seguridad**:
    - CloudTrail para auditoría
@@ -61,12 +63,8 @@ Este proyecto implementa:
 2. **Verificación**:
    - Acceder a la aplicación web
    - Verificar conexión a MongoDB
-   - Comprobar backups automáticos
-
-3. **Detección de Vulnerabilidades**:
-   - Escanear con Wiz
-   - Revisar hallazgos
-   - Demostrar impacto
+   - Comprobar acceso público al S3
+   - Ejecutar backup manual con scripts/backup.sh
 
 ## Estructura del Repositorio
 
@@ -97,6 +95,7 @@ wiz-technical-exercise/
 │       └── requirements.txt # Dependencias de Python
 ├── scripts/                # Scripts de automatización
 │   ├── backup.sh           # Script para copias de seguridad de MongoDB
+│   ├── demo.sh             # Script para demostración
 │   └── mongo-userdata.sh   # Script de inicialización para la VM de MongoDB
 ├── .github/                # Configuración de GitHub
 │   └── workflows/          # Pipelines de CI/CD
@@ -111,58 +110,52 @@ wiz-technical-exercise/
 
 Este proyecto incluye varias debilidades de configuración intencionales que pueden ser detectadas por herramientas de seguridad CSP como Wiz:
 
-1. **VM con Sistema Operativo Obsoleto**:
-   - Ubuntu 16.04 LTS (EOL) para la instancia de MongoDB.
-   - MongoDB 4.0 (versión antigua).
+1. **MongoDB Inseguro**:
+   - Sin autenticación habilitada
+   - Expuesto públicamente
+   - Ubicado en subnet pública
 
 2. **Permisos IAM Excesivos**:
-   - La VM de MongoDB tiene asignado el rol `AdministratorAccess`.
-   - Esto permite acceso completo a todos los servicios de AWS.
+   - La VM de MongoDB tiene permisos excesivos
+   - Los pods tienen permisos cluster-admin
 
 3. **Acceso SSH Abierto**:
-   - El puerto 22 (SSH) está abierto a Internet (0.0.0.0/0).
-   - Esto permite intentos de acceso desde cualquier IP.
+   - El puerto 22 (SSH) está abierto a Internet (0.0.0.0/0)
+   - Esto permite intentos de acceso desde cualquier IP
 
 4. **Bucket S3 Público**:
-   - El bucket de copias de seguridad está configurado como público.
-   - Permite acceso de lectura a cualquier persona.
+   - El bucket está configurado como público
+   - Permite acceso de lectura a cualquier persona
 
 5. **Privilegios de Contenedor Excesivos**:
-   - El contenedor de la aplicación se ejecuta como root (usuario 0).
-   - Tiene asignado el rol `cluster-admin` en Kubernetes.
-
-6. **Autenticación de Base de Datos Débil**:
-   - MongoDB está configurado con autenticación básica.
-   - Las credenciales se almacenan en texto plano en los secretos de Kubernetes.
+   - El contenedor de la aplicación se ejecuta como root
+   - Debug mode habilitado en Flask
+   - Sin límites de recursos
 
 ## Detección con Wiz
 
 Wiz puede detectar estas debilidades de seguridad mediante:
 
 1. **Escaneo de Infraestructura**:
-   - Detección de instancias con sistemas operativos obsoletos.
-   - Identificación de roles IAM con permisos excesivos.
-   - Detección de grupos de seguridad con reglas permisivas.
+   - Identificación de roles IAM con permisos excesivos
+   - Detección de grupos de seguridad con reglas permisivas
+   - Identificación de recursos expuestos públicamente
 
 2. **Escaneo de Contenedores**:
-   - Identificación de contenedores que se ejecutan como root.
-   - Detección de imágenes con vulnerabilidades conocidas.
+   - Identificación de contenedores que se ejecutan como root
+   - Detección de configuraciones inseguras en la aplicación
 
 3. **Escaneo de Almacenamiento**:
-   - Detección de buckets S3 públicos.
-   - Identificación de políticas de bucket permisivas.
-
-4. **Escaneo de Kubernetes**:
-   - Detección de roles RBAC con privilegios excesivos.
-   - Identificación de secretos almacenados en texto plano.
+   - Detección de buckets S3 públicos
+   - Identificación de políticas de bucket permisivas
 
 ## Prerrequisitos
 
-- AWS IAM User con permisos para EKS, EC2, S3, IAM, GuardDuty, CloudTrail, ECR y VPC.
-- Terraform CLI ≥ 1.0.
-- kubectl y Helm.
-- Docker.
-- Acceso a una cuenta de Wiz (para la demostración de detección).
+- AWS IAM User con permisos para EKS, EC2, S3, IAM, GuardDuty, CloudTrail, ECR y VPC
+- Terraform CLI
+- kubectl y Helm
+- Docker
+- Acceso a una cuenta de Wiz (para la demostración de detección)
 
 ## Configuración de Credenciales AWS
 
