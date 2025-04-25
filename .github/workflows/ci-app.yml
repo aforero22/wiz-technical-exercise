@@ -89,7 +89,44 @@ jobs:
           echo "Valor de ECR_URL antes de sed: [$ECR_URL]"
           echo "Valor de MONGO_IP antes de sed: [$MONGO_IP]"
           
-          sed -i "s|\${ECR_URL}|${ECR_URL}|g; s|\${MONGO_IP}|${MONGO_IP}|g" *.yaml
+          # Crear un archivo temporal con los valores correctos
+          cat > deployment.yaml.tmp << EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: wiz-app
+            labels:
+              app: wiz-app
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: wiz-app
+            template:
+              metadata:
+                labels:
+                  app: wiz-app
+              spec:
+                securityContext:
+                  runAsUser: 0
+                  runAsGroup: 0
+                  fsGroup: 0
+                containers:
+                  - name: wiz-app
+                    image: "${ECR_URL}:${IMAGE_TAG}"
+                    env:
+                      - name: MONGODB_URI
+                        value: "mongodb://${MONGO_IP}:27017/wizdb"
+                    resources:
+                      limits:
+                        cpu: "0.5"
+                        memory: "512Mi"
+                      requests:
+                        cpu: "250m"
+                        memory: "50Mi"
+          EOF
+          
+          mv deployment.yaml.tmp deployment.yaml
           
           echo "--- Contenido deployment.yaml después de sed ---"
           cat deployment.yaml || echo "Error leyendo deployment.yaml"
