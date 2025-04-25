@@ -53,19 +53,14 @@ jobs:
           echo "Getting raw outputs and cleaning..."
           cd infra
           
-          # Obtener outputs en formato JSON y extraer valores usando jq
-          echo "Running terraform output -json..."
-          TERRAFORM_OUTPUT=$(terraform output -json | tail -n +2)
-          echo "Raw terraform output:"
-          echo "$TERRAFORM_OUTPUT"
+          # Obtener outputs directamente
+          echo "Getting MONGO_IP..."
+          MONGO_IP=$(terraform output -raw mongo_private_ip | tail -n +2)
+          echo "MONGO_IP: [$MONGO_IP]"
           
-          echo "Extracting values..."
-          MONGO_IP=$(echo "$TERRAFORM_OUTPUT" | jq -r '.mongo_private_ip.value // empty')
-          ECR_URL=$(echo "$TERRAFORM_OUTPUT" | jq -r '.ecr_repository_url.value // empty')
-          
-          # Verificar valores extraídos
-          echo "Extracted MONGO_IP: [$MONGO_IP]"
-          echo "Extracted ECR_URL: [$ECR_URL]"
+          echo "Getting ECR_URL..."
+          ECR_URL=$(terraform output -raw ecr_repository_url | tail -n +2)
+          echo "ECR_URL: [$ECR_URL]"
           
           # Verificar que los valores no estén vacíos
           if [ -z "$MONGO_IP" ] || [ -z "$ECR_URL" ]; then
