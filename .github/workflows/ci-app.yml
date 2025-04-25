@@ -55,7 +55,7 @@ jobs:
           
           # Obtener outputs en formato JSON y extraer valores usando jq
           echo "Running terraform output -json..."
-          TERRAFORM_OUTPUT=$(terraform output -json)
+          TERRAFORM_OUTPUT=$(terraform output -json | tail -n +2)
           echo "Raw terraform output:"
           echo "$TERRAFORM_OUTPUT"
           
