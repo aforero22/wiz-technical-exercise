@@ -7,6 +7,9 @@ REGION="us-east-1"
 # Obtener el ARN del rol del node group
 NODE_GROUP_ROLE=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query 'cluster.roleArn' --output text)
 
+# Obtener el ARN del usuario actual
+USER_ARN=$(aws sts get-caller-identity --query 'Arn' --output text)
+
 # Crear el ConfigMap
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
@@ -25,7 +28,18 @@ data:
       username: system:node:{{EC2PrivateDNSName}}
       groups:
         - system:masters
-  mapUsers: "[]"
+  mapUsers: |
+    - userarn: $USER_ARN
+      username: admin
+      groups:
+        - system:masters
 EOF
 
-echo "ConfigMap aws-auth aplicado correctamente" 
+echo "ConfigMap aws-auth aplicado correctamente"
+
+# Esperar a que el ConfigMap se aplique
+echo "Esperando 10 segundos para que los cambios se propaguen..."
+sleep 10
+
+# Verificar que tenemos los permisos necesarios
+kubectl auth can-i create deployments --namespace default 
