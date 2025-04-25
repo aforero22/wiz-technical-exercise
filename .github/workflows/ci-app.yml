@@ -78,8 +78,9 @@ jobs:
       - name: Deploy to EKS
         env:
           IMAGE_TAG: ${{ github.sha }}
+          # Las variables MONGO_IP y ECR_URL ahora vienen de GITHUB_ENV
         run: |
-          # KUBECONFIG ya no es necesario aquí, se exporta al principio del script
+          # Exportar KUBECONFIG explícitamente en el script
           export KUBECONFIG="$HOME/.kube/config"
           
           # Debug: Verificar la variable y el archivo
