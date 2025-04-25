@@ -592,8 +592,8 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
   data = {
     # Mapeo del Rol IAM de los Nodos EKS para permitirles unirse al clúster
     mapRoles = yamlencode([
-      for role_arn in module.eks.eks_managed_node_groups_iam_role_arns : {
-        rolearn  = role_arn
+      for group in values(module.eks.eks_managed_node_groups) : {
+        rolearn  = group.iam_role_arn
         username = "system:node:{{EC2PrivateDNSName}}"
         groups   = [
           "system:bootstrappers",
