@@ -1,0 +1,44 @@
+Por favor genera un diagrama de arquitectura AWS para una aplicación web de 3 capas con vulnerabilidades intencionales. El diagrama debe incluir:
+
+1. Web Application Tier:
+   - Amazon EKS cluster en VPC
+   - Application Load Balancer
+   - Pods corriendo como root
+   - ECR para imágenes de contenedores
+
+2. Database Tier:
+   - EC2 instance corriendo MongoDB
+   - Security Group permitiendo SSH (22) desde 0.0.0.0/0
+   - MongoDB sin autenticación
+   - Ubicado en subnet pública
+
+3. Storage Tier:
+   - S3 bucket con acceso público
+   - Sin encriptación
+   - Usado para backups de MongoDB
+
+4. Security & Monitoring:
+   - AWS GuardDuty
+   - AWS Config
+   - CloudTrail
+
+5. CI/CD:
+   - GitHub Actions
+   - ECR
+   - Terraform
+
+Elementos adicionales:
+- VPC con subnets públicas y privadas
+- Flujo CI/CD: GitHub → ECR → EKS
+- Flujo de backup: MongoDB → S3
+- IAM roles con permisos excesivos
+
+Leyenda de Vulnerabilidades (marcar en rojo):
+- S3 bucket público
+- SSH abierto a 0.0.0.0/0
+- MongoDB sin autenticación
+- Pods como root
+- MongoDB en subnet pública
+- IAM roles con permisos excesivos
+
+Por favor usa iconos oficiales de AWS y organiza los componentes de forma clara y profesional. 

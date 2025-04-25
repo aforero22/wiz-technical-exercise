@@ -69,13 +69,34 @@ El deployment espera las siguientes variables de entorno:
 - `DEBUG`: Modo debug (true/false)
 - `PORT`: Puerto de la aplicación
 
-## Detección con Wiz
+## Monitoreo y Seguridad
 
-Esta configuración está diseñada para demostrar:
-1. Problemas de seguridad en pods
-2. Configuraciones RBAC inseguras
-3. Exposición de servicios
-4. Manejo inseguro de secretos
+La configuración de Kubernetes es monitoreada por:
+
+1. **Amazon EKS Control Plane Logging**:
+   - Logs de API Server
+   - Logs de Audit
+   - Logs de Authenticator
+   - Logs de Controller Manager
+   - Logs de Scheduler
+
+2. **AWS Config Rules para EKS**:
+   - Evaluación de configuración del cluster
+   - Monitoreo de roles RBAC
+   - Verificación de políticas de red
+   - Control de acceso a pods
+
+3. **Amazon GuardDuty para EKS**:
+   - Detección de actividad maliciosa en pods
+   - Monitoreo de accesos no autorizados
+   - Identificación de configuraciones inseguras
+   - Alertas de comportamiento anómalo
+
+4. **CloudWatch Container Insights**:
+   - Métricas de rendimiento de pods
+   - Logs de contenedores
+   - Estado de servicios
+   - Alertas de recursos
 
 ## Mejores Prácticas (No Implementadas Intencionalmente)
 
@@ -90,6 +111,6 @@ Esta configuración está diseñada para demostrar:
    - Usar servicios internos cuando sea posible
 
 3. **Secrets**:
-   - Usar gestor de secretos (AWS Secrets Manager)
+   - Usar AWS Secrets Manager
    - Implementar cifrado en tránsito
    - Rotar secretos regularmente 

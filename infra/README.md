@@ -1,6 +1,6 @@
 # Infraestructura AWS (IaC)
 
-Este directorio contiene la infraestructura como código (IaC) implementada con Terraform para el ejercicio técnico de Wiz.
+Este directorio contiene la infraestructura como código (IaC) implementada con Terraform para el ejercicio técnico.
 
 ## Estructura
 
@@ -87,10 +87,24 @@ Copiar `terraform.tfvars.sample` a `terraform.tfvars` y configurar:
 - `backups_bucket`: Nombre del bucket S3
 - `ecr_repository_url`: URL del repositorio ECR
 
-## Detección con Wiz
+## Monitoreo y Detección
 
-Esta infraestructura está diseñada para demostrar:
-1. Configuraciones inseguras de red
-2. Permisos IAM excesivos
-3. Exposición de servicios
-4. Problemas de cifrado y acceso público 
+La infraestructura está monitoreada por servicios nativos de AWS:
+
+1. **AWS Config**:
+   - Reglas para evaluar configuración de recursos
+   - Monitoreo de cambios en Security Groups
+   - Evaluación de compliance de IAM
+   - Detección de recursos públicos
+
+2. **Amazon GuardDuty**:
+   - Detección de amenazas en tiempo real
+   - Análisis de logs de VPC Flow
+   - Monitoreo de actividad de IAM
+   - Identificación de accesos maliciosos
+
+3. **AWS CloudTrail**:
+   - Registro de actividad de la API
+   - Auditoría de cambios en recursos
+   - Seguimiento de acciones administrativas
+   - Logs de acceso a S3 

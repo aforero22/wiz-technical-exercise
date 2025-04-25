@@ -1,6 +1,6 @@
 # Aplicación Web (Tier 1)
 
-Esta carpeta contiene la aplicación web containerizada que forma parte del ejercicio técnico de Wiz.
+Esta carpeta contiene la aplicación web containerizada que forma parte del ejercicio técnico.
 
 ## Estructura
 
@@ -58,10 +58,21 @@ Variables de entorno:
 - `DEBUG`: Habilita modo debug (default: True)
 - `PORT`: Puerto de la aplicación (default: 8080)
 
-## Detección con Wiz
+## Detección de Vulnerabilidades
 
-Esta aplicación está diseñada para demostrar:
-1. Vulnerabilidades en contenedores
-2. Configuraciones inseguras de Kubernetes
-3. Problemas de seguridad en aplicaciones web
-4. Exposición de servicios internos 
+Esta aplicación está configurada para ser monitoreada por:
+
+1. **Amazon GuardDuty**:
+   - Detección de actividad sospechosa en contenedores
+   - Monitoreo de accesos no autorizados
+   - Identificación de patrones de comportamiento anómalos
+
+2. **AWS Config**:
+   - Evaluación de reglas de configuración de EKS
+   - Monitoreo de cambios en la configuración
+   - Verificación de compliance con políticas de seguridad
+
+3. **CloudTrail**:
+   - Registro de actividad de la API de EKS
+   - Auditoría de cambios en la configuración
+   - Seguimiento de acciones administrativas 
