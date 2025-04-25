@@ -422,6 +422,15 @@ resource "aws_security_group" "eks_nodes" {
     security_groups = [module.eks.cluster_security_group_id]
   }
 
+  # Añadido: Regla EGRESS explícita para permitir conexión a MongoDB SG
+  egress {
+    from_port       = 27017
+    to_port         = 27017
+    protocol        = "tcp"
+    security_groups = [aws_security_group.mongo_sg.id]
+  }
+
+  # Regla EGRESS existente para permitir todo lo demás hacia afuera
   egress {
     from_port   = 0
     to_port     = 0
