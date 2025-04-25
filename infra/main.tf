@@ -208,8 +208,6 @@ module "eks" {
   # Enable public access to API server
   cluster_endpoint_public_access = true
   cluster_endpoint_private_access = true
-
-  # Configure access to API server
   cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]  # VULNERABILIDAD: Acceso público al API server
 
   # Enable IRSA
@@ -273,6 +271,46 @@ module "eks" {
     Environment = "production"
     Terraform   = "true"
   }
+}
+
+# Configuración de Acceso EKS mediante Access Entries
+
+# Access Entry para el Rol IAM que ejecuta Terraform
+resource "aws_eks_access_entry" "terraform_exec_role" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = data.aws_caller_identity.current.arn
+  type          = "STANDARD"
+  depends_on = [module.eks]
+}
+
+# Asociación de Política para el Rol de Terraform
+resource "aws_eks_access_policy_association" "terraform_exec_role_admin" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = data.aws_caller_identity.current.arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  access_scope {
+    type = "cluster"
+  }
+  depends_on = [aws_eks_access_entry.terraform_exec_role]
+}
+
+# Access Entry para el Usuario IAM Interactivo
+resource "aws_eks_access_entry" "interactive_user" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = "arn:aws:iam::277707137984:user/odl_user_1695962"
+  type          = "STANDARD"
+  depends_on = [module.eks]
+}
+
+# Asociación de Política para el Usuario Interactivo
+resource "aws_eks_access_policy_association" "interactive_user_admin" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = "arn:aws:iam::277707137984:user/odl_user_1695962"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  access_scope {
+    type = "cluster"
+  }
+  depends_on = [aws_eks_access_entry.interactive_user]
 }
 
 # Bucket S3 para backups (modificado para evitar acceso público)
@@ -581,51 +619,4 @@ resource "aws_cloudwatch_event_target" "backup_target" {
 resource "aws_iam_role_policy_attachment" "ssm_policy" {
   role       = aws_iam_role.mongo_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-# ConfigMap aws-auth para mapear roles/usuarios IAM a Kubernetes RBAC
-# Gestionado por Terraform para incluir el rol de los nodos y el usuario interactivo
-resource "kubernetes_config_map" "aws_auth" {
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
-  data = {
-    # Mapeo del Rol IAM de los Nodos EKS para permitirles unirse al clúster
-    mapRoles = yamlencode(concat(
-      # Mapeo de los roles de los nodos worker
-      [
-        for group in values(module.eks.eks_managed_node_groups) : {
-          rolearn  = group.iam_role_arn 
-          username = "system:node:{{EC2PrivateDNSName}}"
-          groups   = [
-            "system:bootstrappers",
-            "system:nodes"
-          ]
-        }
-      ],
-      # Añadir mapeo explícito para el Rol IAM que crea/gestiona el clúster (ejecuta Terraform)
-      [
-        {
-          rolearn  = data.aws_caller_identity.current.arn
-          username = "terraform" # O cualquier nombre descriptivo
-          groups   = [
-            "system:masters" # Otorgar permisos de admin
-          ]
-        }
-      ]
-    ))
-    # Mapeo del usuario IAM interactivo para darle permisos de admin
-    mapUsers = yamlencode([
-      {
-        userarn  = "arn:aws:iam::277707137984:user/odl_user_1695962" # Tu ARN de usuario
-        username = "odl_user_1695962" # Nombre de usuario en K8s
-        groups   = [
-          "system:masters" # Grupo de administradores
-        ]
-      }
-    ])
-  }
-
-  depends_on = [module.eks] # Asegura que el clúster exista antes de crear el ConfigMap
 }
