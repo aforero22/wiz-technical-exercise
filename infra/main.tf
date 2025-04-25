@@ -142,20 +142,24 @@ resource "aws_instance" "mongo" {
 
 # Actualizar repositorios e instalar dependencias
 apt-get update
-apt-get install -y gnupg wget
-
-# Añadir clave GPG de MongoDB
-wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | apt-key add -
-
-# Configurar repositorio de MongoDB 4.0
-echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse" \
-    | tee /etc/apt/sources.list.d/mongodb-org-4.0.list
-
-# Actualizar repositorios e instalar MongoDB
+apt-get install -y gnupg
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 apt-get update
 apt-get install -y mongodb-org
-
-# Habilitar e iniciar el servicio de MongoDB
+mkdir -p /data/db
+chown -R mongodb:mongodb /data/db
+cat > /etc/mongod.conf <<EOL
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+storage:
+  dbPath: /data/db
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+EOL
 systemctl enable mongod
 systemctl start mongod
 

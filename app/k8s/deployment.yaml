@@ -24,7 +24,7 @@ spec:
           image: "${ECR_URL}:${IMAGE_TAG}"
           env:
             - name: MONGODB_URI
-              value: "mongodb://${MONGO_IP}:27017/wizdb"
+              value: mongodb://10.0.1.210:27017/wizdb
           resources:
             limits:
               cpu: "500m"
