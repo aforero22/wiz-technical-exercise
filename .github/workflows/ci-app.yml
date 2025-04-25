@@ -48,25 +48,14 @@ jobs:
         run: |
           aws eks update-kubeconfig --name wiz-cluster-new --region us-east-1
       
-      - name: Get Outputs and Set Env
+      - name: Set Output Env Vars
         id: vars
-        working-directory: infra
+        working-directory: infra 
         run: |
-          # Instalar jq si no está disponible
-          # sudo apt-get update && sudo apt-get install -y jq 
-          echo "Getting raw output from terraform output -json..."
-          # Capturar salida cruda
-          JSON_OUTPUT=$(terraform output -json)
-          
-          # Debug: Mostrar la salida cruda CAPTURADA
-          echo "--- Raw JSON_OUTPUT variable content ---"
-          echo "$JSON_OUTPUT"
-          echo "--- End Raw JSON_OUTPUT ---"
-          
-          echo "Attempting to parse with sed + jq..."
-          # Eliminar la primera línea con sed '1d' y LUEGO parsear con jq
-          MONGO_IP=$(echo "$JSON_OUTPUT" | sed '1d' | jq -r '.mongo_public_ip.value')
-          ECR_URL=$(echo "$JSON_OUTPUT" | sed '1d' | jq -r '.ecr_repository_url.value')
+          echo "Getting raw outputs..."
+          # Obtener outputs crudos directamente
+          MONGO_IP=$(terraform output -raw mongo_public_ip)
+          ECR_URL=$(terraform output -raw ecr_repository_url)
           
           # Verificar valores extraídos
           echo "Extracted MONGO_IP: [$MONGO_IP]"
