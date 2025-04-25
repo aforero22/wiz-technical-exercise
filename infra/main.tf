@@ -583,12 +583,11 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
 
 # ConfigMap aws-auth para mapear roles/usuarios IAM a Kubernetes RBAC
 # Gestionado por Terraform para incluir el rol de los nodos y el usuario interactivo
-resource "kubernetes_config_map_v1_data" "aws_auth" {
+resource "kubernetes_config_map" "aws_auth" {
   metadata {
     name      = "aws-auth"
     namespace = "kube-system"
   }
-  force = true # Permite a Terraform tomar control de este ConfigMap
   data = {
     # Mapeo del Rol IAM de los Nodos EKS para permitirles unirse al clúster
     mapRoles = yamlencode(concat(
