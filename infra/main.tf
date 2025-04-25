@@ -275,34 +275,15 @@ module "eks" {
 
 # Configuración de Acceso EKS mediante Access Entries
 
-# Access Entry para el Rol IAM que ejecuta Terraform
-resource "aws_eks_access_entry" "terraform_exec_role" {
-  cluster_name  = module.eks.cluster_name
-  principal_arn = data.aws_caller_identity.current.arn
-  type          = "STANDARD"
-  depends_on = [module.eks]
-}
-
-# Asociación de Política para el Rol de Terraform
-resource "aws_eks_access_policy_association" "terraform_exec_role_admin" {
-  cluster_name  = module.eks.cluster_name
-  principal_arn = data.aws_caller_identity.current.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  access_scope {
-    type = "cluster"
-  }
-  depends_on = [aws_eks_access_entry.terraform_exec_role]
-}
-
-# Access Entry para el Usuario IAM Interactivo
+# Access Entry para el Usuario IAM Interactivo (que también ejecuta el pipeline)
 resource "aws_eks_access_entry" "interactive_user" {
   cluster_name  = module.eks.cluster_name
-  principal_arn = "arn:aws:iam::277707137984:user/odl_user_1695962"
+  principal_arn = "arn:aws:iam::277707137984:user/odl_user_1695962" # Tu ARN
   type          = "STANDARD"
   depends_on = [module.eks]
 }
 
-# Asociación de Política para el Usuario Interactivo
+# Asociación de Política para el Usuario Interactivo (Admin)
 resource "aws_eks_access_policy_association" "interactive_user_admin" {
   cluster_name  = module.eks.cluster_name
   principal_arn = "arn:aws:iam::277707137984:user/odl_user_1695962"
