@@ -591,16 +591,29 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
   force = true # Permite a Terraform tomar control de este ConfigMap
   data = {
     # Mapeo del Rol IAM de los Nodos EKS para permitirles unirse al clúster
-    mapRoles = yamlencode([
-      for group in values(module.eks.eks_managed_node_groups) : {
-        rolearn  = group.iam_role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = [
-          "system:bootstrappers",
-          "system:nodes"
-        ]
-      }
-    ])
+    mapRoles = yamlencode(concat(
+      # Mapeo de los roles de los nodos worker
+      [
+        for group in values(module.eks.eks_managed_node_groups) : {
+          rolearn  = group.iam_role_arn 
+          username = "system:node:{{EC2PrivateDNSName}}"
+          groups   = [
+            "system:bootstrappers",
+            "system:nodes"
+          ]
+        }
+      ],
+      # Añadir mapeo explícito para el Rol IAM que crea/gestiona el clúster (ejecuta Terraform)
+      [
+        {
+          rolearn  = data.aws_caller_identity.current.arn
+          username = "terraform" # O cualquier nombre descriptivo
+          groups   = [
+            "system:masters" # Otorgar permisos de admin
+          ]
+        }
+      ]
+    ))
     # Mapeo del usuario IAM interactivo para darle permisos de admin
     mapUsers = yamlencode([
       {
