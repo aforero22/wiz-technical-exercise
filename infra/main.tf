@@ -1,4 +1,4 @@
- provider "aws" {
+provider "aws" {
   region = "us-east-1"
 }
 
@@ -278,12 +278,13 @@ resource "aws_s3_bucket" "backups" {
   bucket = "wiz-exercise-backups-${random_id.bucket_id.hex}"
 }
 
-resource "aws_s3_bucket_public_access_block" "backups_block" {
-  bucket                  = aws_s3_bucket.backups.id
-  block_public_acls       = false  # VULNERABILIDAD: Bucket público
-  block_public_policy     = false  # VULNERABILIDAD: Políticas públicas permitidas
-  ignore_public_acls      = false  # VULNERABILIDAD: ACLs públicas permitidas
-  restrict_public_buckets = false  # VULNERABILIDAD: Buckets públicos permitidos
+resource "aws_s3_bucket_public_access_block" "backups_public_access_block" {
+  bucket = aws_s3_bucket.backups.id
+
+  block_public_acls   = false # Permite ACLs públicas (necesario para algunas configuraciones públicas)
+  ignore_public_acls  = false # No ignora ACLs públicas
+  block_public_policy = false # <-- Cambiado a false para permitir políticas públicas
+  restrict_public_buckets = false # Permite acceso público general si la política o ACL lo permiten
 }
 
 resource "aws_s3_bucket_policy" "backups_policy" {
