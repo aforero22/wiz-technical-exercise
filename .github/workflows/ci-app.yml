@@ -63,10 +63,10 @@ jobs:
           echo "$JSON_OUTPUT"
           echo "--- End Raw JSON_OUTPUT ---"
           
-          echo "Attempting to parse with tail + jq..."
-          # Eliminar la primera línea con tail y LUEGO parsear con jq
-          MONGO_IP=$(echo "$JSON_OUTPUT" | tail -n +2 | jq -r '.mongo_public_ip.value')
-          ECR_URL=$(echo "$JSON_OUTPUT" | tail -n +2 | jq -r '.ecr_repository_url.value')
+          echo "Attempting to parse with sed + jq..."
+          # Eliminar la primera línea con sed '1d' y LUEGO parsear con jq
+          MONGO_IP=$(echo "$JSON_OUTPUT" | sed '1d' | jq -r '.mongo_public_ip.value')
+          ECR_URL=$(echo "$JSON_OUTPUT" | sed '1d' | jq -r '.ecr_repository_url.value')
           
           # Verificar valores extraídos
           echo "Extracted MONGO_IP: [$MONGO_IP]"
