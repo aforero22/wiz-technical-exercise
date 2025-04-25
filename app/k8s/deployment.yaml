@@ -27,7 +27,7 @@ spec:
               value: "mongodb://${MONGO_IP}:27017/wizdb"
           resources:
             limits:
-              cpu: "0.5"
+              cpu: "500m"
               memory: "512Mi"
             requests:
               cpu: "250m"

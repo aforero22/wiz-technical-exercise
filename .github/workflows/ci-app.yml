@@ -58,6 +58,10 @@ jobs:
           MONGO_IP=$(terraform output -raw mongo_private_ip | tail -n +2 | sed 's/::debug::.*$//')
           echo "MONGO_IP: [$MONGO_IP]"
           
+          echo "Getting MONGO_PUBLIC_IP..."
+          MONGO_PUBLIC_IP=$(terraform output -raw mongo_public_ip | tail -n +2 | sed 's/::debug::.*$//')
+          echo "MONGO_PUBLIC_IP: [$MONGO_PUBLIC_IP]"
+          
           echo "Getting ECR_URL..."
           ECR_URL=$(terraform output -raw ecr_repository_url | tail -n +2 | sed 's/::debug::.*$//')
           echo "ECR_URL: [$ECR_URL]"
@@ -72,6 +76,7 @@ jobs:
           
           # Escribir en GITHUB_ENV
           echo "MONGO_IP=$MONGO_IP" >> $GITHUB_ENV
+          echo "MONGO_PUBLIC_IP=$MONGO_PUBLIC_IP" >> $GITHUB_ENV
           echo "ECR_URL=$ECR_URL" >> $GITHUB_ENV
           echo "Wrote cleaned values to GITHUB_ENV"
         shell: /usr/bin/bash -e {0}

@@ -18,6 +18,56 @@ Este proyecto implementa:
    - Implementación de controles preventivos y de detección.
    - Configuración de registro de auditoría.
 
+## Demostración
+
+### Componentes a Mostrar
+
+1. **Infraestructura**:
+   - VPC con subredes públicas y privadas
+   - EKS cluster con nodos worker
+   - VM de MongoDB en subred pública
+   - Bucket S3 para backups
+
+2. **Aplicación**:
+   - Aplicación web accesible públicamente
+   - Conexión a MongoDB
+   - Backups automáticos
+
+3. **Vulnerabilidades**:
+   - Ver [VULNERABILITIES.md](VULNERABILITIES.md) para lista completa
+   - Demostración de acceso público a MongoDB
+   - Acceso a backups en S3
+   - Privilegios excesivos en contenedores
+
+4. **Controles de Seguridad**:
+   - CloudTrail para auditoría
+   - GuardDuty para detección
+   - AWS Config para monitoreo
+
+### Pasos de la Demostración
+
+1. **Despliegue**:
+   ```bash
+   # Desplegar infraestructura
+   cd infra
+   terraform init
+   terraform apply
+
+   # Desplegar aplicación
+   cd ../app
+   kubectl apply -f k8s/
+   ```
+
+2. **Verificación**:
+   - Acceder a la aplicación web
+   - Verificar conexión a MongoDB
+   - Comprobar backups automáticos
+
+3. **Detección de Vulnerabilidades**:
+   - Escanear con Wiz
+   - Revisar hallazgos
+   - Demostrar impacto
+
 ## Estructura del Repositorio
 
 ```text
@@ -52,6 +102,7 @@ wiz-technical-exercise/
 │   └── workflows/          # Pipelines de CI/CD
 │       ├── ci-infra.yml    # Pipeline para infraestructura
 │       └── ci-app.yml      # Pipeline para la aplicación
+├── VULNERABILITIES.md      # Documentación de vulnerabilidades
 ├── README.md               # Este archivo
 └── LICENSE                 # Licencia del proyecto
 ```
