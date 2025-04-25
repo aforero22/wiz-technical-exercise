@@ -40,6 +40,10 @@ jobs:
         with:
           terraform_version: 1.5.7 # O la versión que estés usando
       
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infra
+      
       - name: Configure kubectl
         run: |
           aws eks update-kubeconfig --name wiz-cluster-new --region us-east-1
