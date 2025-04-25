@@ -24,6 +24,15 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
         working-directory: infra
+
+      # Añadir paso para importar la entrada de acceso existente (si existe)
+      # Esto sincroniza el estado si la entrada ya fue creada por un recurso anterior
+      - name: Terraform Import EKS Access Entry
+        run: |
+          terraform import aws_eks_access_entry.interactive_user wiz-cluster-new:arn:aws:iam::277707137984:user/odl_user_1695962 || echo "Import failed, maybe entry doesn't exist yet. Continuing..."
+          terraform import aws_eks_access_policy_association.interactive_user_admin wiz-cluster-new#arn:aws:iam::277707137984:user/odl_user_1695962#arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy || echo "Import failed, maybe association doesn't exist yet. Continuing..."
+        working-directory: infra
+
       - name: Terraform Plan
         run: terraform plan
         working-directory: infra
