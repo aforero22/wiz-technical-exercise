@@ -52,19 +52,23 @@ jobs:
         id: vars
         working-directory: infra 
         run: |
-          echo "Getting raw outputs..."
-          # Obtener outputs crudos directamente
-          MONGO_IP=$(terraform output -raw mongo_public_ip)
-          ECR_URL=$(terraform output -raw ecr_repository_url)
+          echo "Getting raw outputs and cleaning..."
+          # Obtener outputs crudos y limpiarlos
+          # Eliminar línea de comando (empieza con /) y línea de debug (empieza con ::)
+          RAW_MONGO_IP=$(terraform output -raw mongo_private_ip)
+          MONGO_IP=$(echo "$RAW_MONGO_IP" | grep -v '^/' | grep -v '^::')
+          
+          RAW_ECR_URL=$(terraform output -raw ecr_repository_url)
+          ECR_URL=$(echo "$RAW_ECR_URL" | grep -v '^/' | grep -v '^::')
           
           # Verificar valores extraídos
-          echo "Extracted MONGO_IP: [$MONGO_IP]"
-          echo "Extracted ECR_URL: [$ECR_URL]"
+          echo "Cleaned MONGO_IP: [$MONGO_IP]"
+          echo "Cleaned ECR_URL: [$ECR_URL]"
           
           # Escribir en GITHUB_ENV
           echo "MONGO_IP=$MONGO_IP" >> $GITHUB_ENV
           echo "ECR_URL=$ECR_URL" >> $GITHUB_ENV
-          echo "Wrote values to GITHUB_ENV"
+          echo "Wrote cleaned values to GITHUB_ENV"
       
       - name: Deploy to EKS
         env:

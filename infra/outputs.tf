@@ -28,3 +28,10 @@ output "ecr_repository_url" {
   value       = aws_ecr_repository.wiz_app.repository_url
   description = "URI del repositorio ECR"
 }
+
+# IP privada de la instancia de MongoDB
+# Usada para la conexión desde EKS
+output "mongo_private_ip" {
+  value       = aws_instance.mongo.private_ip
+  description = "IP privada de la VM MongoDB"
+}
