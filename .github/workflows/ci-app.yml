@@ -92,11 +92,6 @@ jobs:
           pip install -r app/src/requirements.txt
           pip install awscli
       
-      - name: Get MongoDB Private IP
-        id: get_mongo_ip
-        run: |
-          echo "MONGO_IP=$(terraform -chdir=infra output -raw mongo_private_ip)" >> $GITHUB_ENV
-      
       - name: Set up Kubeconfig
         run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
       
