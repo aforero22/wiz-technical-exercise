@@ -52,14 +52,14 @@ jobs:
         id: get-vars
         run: |
           cd infra
-          MONGO_IP=$(terraform output -raw mongo_public_ip)
-          ECR_URL=$(terraform output -raw ecr_repository_url)
-          printf "MONGO_IP=%s\n" "$MONGO_IP" >> $GITHUB_ENV
-          printf "ECR_URL=%s\n" "$ECR_URL" >> $GITHUB_ENV
+          echo "::set-output name=mongo_ip::$(terraform output -raw mongo_public_ip)"
+          echo "::set-output name=ecr_url::$(terraform output -raw ecr_repository_url)"
       
       - name: Deploy to EKS
         env:
           IMAGE_TAG: ${{ github.sha }}
+          MONGO_IP: ${{ steps.get-vars.outputs.mongo_ip }}
+          ECR_URL: ${{ steps.get-vars.outputs.ecr_url }}
         run: |
           cd app/k8s
           # Reemplazar variables en los manifiestos
