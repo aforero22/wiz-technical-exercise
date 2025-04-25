@@ -1,6 +1,6 @@
 # Wiz Technical Exercise
 
-Este repositorio implementa una solución completa en AWS para el ejercicio técnico de Wiz, demostrando una aplicación web de tres niveles con debilidades de configuración intencionales que pueden ser detectadas y corregidas utilizando herramientas de seguridad CSP como Wiz.
+Este repositorio implementa una solución completa en AWS para el ejercicio técnico de Wiz, demostrando una aplicación web de tres niveles con debilidades de configuración intencionales que pueden ser detectadas y corregidas utilizando herramientas de seguridad propias del CSP, en este caso AWS.
 
 ## Descripción General
 
@@ -108,7 +108,7 @@ wiz-technical-exercise/
 
 ## Debilidades de Seguridad Intencionales
 
-Este proyecto incluye varias debilidades de configuración intencionales que pueden ser detectadas por herramientas de seguridad CSP como Wiz:
+Este proyecto incluye varias debilidades de configuración intencionales que pueden ser detectadas por herramientas de seguridad nativas de AWS:
 
 1. **MongoDB Inseguro**:
    - Sin autenticación habilitada
@@ -132,22 +132,22 @@ Este proyecto incluye varias debilidades de configuración intencionales que pue
    - Debug mode habilitado en Flask
    - Sin límites de recursos
 
-## Detección con Wiz
+## Detección con Herramientas de AWS
 
-Wiz puede detectar estas debilidades de seguridad mediante:
+Estas debilidades de seguridad pueden ser detectadas mediante:
 
 1. **Escaneo de Infraestructura**:
-   - Identificación de roles IAM con permisos excesivos
-   - Detección de grupos de seguridad con reglas permisivas
-   - Identificación de recursos expuestos públicamente
+   - Identificación de roles IAM con permisos excesivos (AWS Config)
+   - Detección de grupos de seguridad con reglas permisivas (AWS Config, GuardDuty)
+   - Identificación de recursos expuestos públicamente (GuardDuty)
 
 2. **Escaneo de Contenedores**:
    - Identificación de contenedores que se ejecutan como root
    - Detección de configuraciones inseguras en la aplicación
 
 3. **Escaneo de Almacenamiento**:
-   - Detección de buckets S3 públicos
-   - Identificación de políticas de bucket permisivas
+   - Detección de buckets S3 públicos (AWS Config)
+   - Identificación de políticas de bucket permisivas (CloudTrail)
 
 ## Prerrequisitos
 
@@ -155,7 +155,6 @@ Wiz puede detectar estas debilidades de seguridad mediante:
 - Terraform CLI
 - kubectl y Helm
 - Docker
-- Acceso a una cuenta de Wiz (para la demostración de detección)
 
 ## Configuración de Credenciales AWS
 
@@ -241,18 +240,11 @@ Verifica el archivo en:
 https://$AWS_BUCKET_NAME.s3.amazonaws.com/dump_YYYYMMDD_HHMMSS.archive
 ```
 
-## Demostración con Wiz
+## Demostración con Herramientas de AWS
 
-1. Conecta tu cuenta de AWS a Wiz.
-2. Ejecuta un escaneo completo de la infraestructura.
-3. Revisa los hallazgos de seguridad, que deberían incluir:
-   - Sistema operativo obsoleto en la VM de MongoDB
-   - Roles IAM con permisos excesivos
-   - Bucket S3 público
-   - Contenedores ejecutándose como root
-   - Roles RBAC con privilegios excesivos
-
-4. Documenta los hallazgos y explica cómo Wiz ayuda a identificar estas debilidades.
+1. Revisa los hallazgos en AWS GuardDuty
+2. Revisa las reglas y evaluaciones en AWS Config
+3. Consulta registros de auditoría en CloudTrail
 
 ## Limpieza
 
