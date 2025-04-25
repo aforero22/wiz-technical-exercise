@@ -53,13 +53,13 @@ jobs:
           echo "Getting raw outputs and cleaning..."
           cd infra
           
-          # Obtener outputs directamente
+          # Obtener outputs directamente y limpiar mensajes de debug
           echo "Getting MONGO_IP..."
-          MONGO_IP=$(terraform output -raw mongo_private_ip | tail -n +2)
+          MONGO_IP=$(terraform output -raw mongo_private_ip | tail -n +2 | sed 's/::debug::.*$//')
           echo "MONGO_IP: [$MONGO_IP]"
           
           echo "Getting ECR_URL..."
-          ECR_URL=$(terraform output -raw ecr_repository_url | tail -n +2)
+          ECR_URL=$(terraform output -raw ecr_repository_url | tail -n +2 | sed 's/::debug::.*$//')
           echo "ECR_URL: [$ECR_URL]"
           
           # Verificar que los valores no estén vacíos
