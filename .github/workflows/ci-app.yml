@@ -55,7 +55,7 @@ jobs:
           
           # Obtener outputs directamente y limpiar mensajes de debug
           echo "Getting MONGO_IP..."
-          MONGO_IP=$(terraform output -raw mongo_private_ip | tail -n +2 | sed 's/::debug::.*$//')
+          MONGO_IP=$(terraform output -raw mongo_public_ip | tail -n +2 | sed 's/::debug::.*$//')
           echo "MONGO_IP: [$MONGO_IP]"
           
           echo "Getting MONGO_PUBLIC_IP..."
