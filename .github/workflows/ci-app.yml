@@ -54,9 +54,17 @@ jobs:
         run: |
           # Instalar jq si no está disponible
           # sudo apt-get update && sudo apt-get install -y jq 
-          echo "Getting outputs via terraform output -json | jq ..."
-          # Ejecutar terraform output -json y pasar directamente a jq
+          echo "Getting raw output from terraform output -json..."
+          # Capturar salida cruda
           JSON_OUTPUT=$(terraform output -json)
+          
+          # Debug: Mostrar la salida cruda CAPTURADA
+          echo "--- Raw JSON_OUTPUT variable content ---"
+          echo "$JSON_OUTPUT"
+          echo "--- End Raw JSON_OUTPUT ---"
+          
+          echo "Attempting to parse with jq..."
+          # Intentar parsear con jq
           MONGO_IP=$(echo "$JSON_OUTPUT" | jq -r '.mongo_public_ip.value')
           ECR_URL=$(echo "$JSON_OUTPUT" | jq -r '.ecr_repository_url.value')
           
